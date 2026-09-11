@@ -3,10 +3,9 @@ package com.zeriva.app;
 import android.app.Activity;
 import android.os.Bundle;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.graphics.Typeface;
 import android.view.Gravity;
-import android.view.View;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -23,7 +22,7 @@ public class MainActivity extends Activity {
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
         main.setGravity(Gravity.CENTER_HORIZONTAL);
-        main.setPadding(40, 60, 40, 40);
+        main.setPadding(35, 55, 35, 35);
         main.setBackgroundColor(GREEN);
 
         TextView title = new TextView(this);
@@ -33,47 +32,50 @@ public class MainActivity extends Activity {
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         title.setGravity(Gravity.CENTER);
 
-        main.addView(title,
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT));
+        main.addView(title);
 
         TextView subtitle = new TextView(this);
         subtitle.setText("انگور ممتاز مریوان\nدریاچه زریوار • مریوان");
         subtitle.setTextColor(WHITE);
-        subtitle.setTextSize(20);
+        subtitle.setTextSize(19);
         subtitle.setGravity(Gravity.CENTER);
-        subtitle.setPadding(0, 20, 0, 50);
+        subtitle.setPadding(0, 15, 0, 35);
 
-        main.addView(subtitle,
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT));
+        main.addView(subtitle);
 
-        addButton(main, "👥  مشتریان");
-        addButton(main, "💰  حساب‌ها و معاملات");
-        addButton(main, "🍇  خرید از باغدار");
-        addButton(main, "📦  فروش و ارسال");
-        addButton(main, "📊  گزارش‌ها");
+        addButton(main, "مشتریان");
+        addButton(main, "حساب‌ها و معاملات");
+        addButton(main, "خرید از باغدار");
+        addButton(main, "فروش و ارسال");
+        addButton(main, "گزارش‌ها");
 
         setContentView(main);
     }
 
     private void addButton(LinearLayout parent, String text) {
 
-        Button button = new Button(this);
+        TextView button = new TextView(this);
+
         button.setText(text);
-        button.setTextSize(18);
         button.setTextColor(GOLD);
-        button.setAllCaps(false);
+        button.setTextSize(18);
         button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        button.setGravity(Gravity.CENTER);
+
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(GREEN);
+        background.setStroke(2, GOLD);
+        background.setCornerRadius(18);
+
+        button.setBackground(background);
+        button.setPadding(10, 10, 10, 10);
 
         LinearLayout.LayoutParams params =
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         65);
 
-        params.setMargins(0, 8, 0, 8);
+        params.setMargins(0, 7, 0, 7);
 
         parent.addView(button, params);
     }
