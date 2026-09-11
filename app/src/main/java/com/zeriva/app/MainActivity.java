@@ -22,7 +22,7 @@ public class MainActivity extends Activity {
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
         main.setGravity(Gravity.CENTER_HORIZONTAL);
-        main.setPadding(35, 55, 35, 35);
+        main.setPadding(dp(25), dp(40), dp(25), dp(25));
         main.setBackgroundColor(GREEN);
 
         TextView title = new TextView(this);
@@ -39,7 +39,7 @@ public class MainActivity extends Activity {
         subtitle.setTextColor(WHITE);
         subtitle.setTextSize(19);
         subtitle.setGravity(Gravity.CENTER);
-        subtitle.setPadding(0, 15, 0, 35);
+        subtitle.setPadding(0, dp(12), 0, dp(25));
 
         main.addView(subtitle);
 
@@ -61,22 +61,44 @@ public class MainActivity extends Activity {
         button.setTextSize(18);
         button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         button.setGravity(Gravity.CENTER);
+        button.setIncludeFontPadding(true);
+        button.setMinHeight(dp(60));
 
         GradientDrawable background = new GradientDrawable();
         background.setColor(GREEN);
-        background.setStroke(2, GOLD);
-        background.setCornerRadius(18);
+        background.setStroke(dp(2), GOLD);
+        background.setCornerRadius(dp(18));
 
         button.setBackground(background);
-        button.setPadding(10, 10, 10, 10);
+
+        button.setPadding(
+                dp(10),
+                dp(8),
+                dp(10),
+                dp(8)
+        );
 
         LinearLayout.LayoutParams params =
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
-                        65);
+                        dp(60)
+                );
 
-        params.setMargins(0, 7, 0, 7);
+        params.setMargins(
+                0,
+                dp(5),
+                0,
+                dp(5)
+        );
 
         parent.addView(button, params);
+    }
+
+    private int dp(int value) {
+        return Math.round(
+                value * getResources()
+                        .getDisplayMetrics()
+                        .density
+        );
     }
 }
