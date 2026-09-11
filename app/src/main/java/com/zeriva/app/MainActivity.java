@@ -37,8 +37,7 @@ public class MainActivity extends Activity {
 
         LinearLayout main = layout();
 
-        TextView title = title("ZERIVA", 42);
-        main.addView(title);
+        main.addView(title("ZERIVA", 42));
 
         TextView subtitle = new TextView(this);
         subtitle.setText("انگور ممتاز مریوان\nدریاچه زریوار • مریوان");
@@ -50,6 +49,9 @@ public class MainActivity extends Activity {
 
         button(main, "مشتریان", v -> customers());
         button(main, "حساب‌ها و معاملات", v -> accounts());
+        button(main, "ثبت سفارش", v -> addOrder());
+        button(main, "سفارش‌ها", v -> orderList());
+        button(main, "قیمت روز", v -> dailyPrice());
         button(main, "خرید از باغدار", v -> purchase());
         button(main, "فروش و ارسال", v -> sale());
         button(main, "گزارش‌ها", v -> reports());
@@ -75,10 +77,12 @@ public class MainActivity extends Activity {
     private void addCustomer() {
 
         LinearLayout l = layout();
+
         l.addView(title("ثبت مشتری جدید", 30));
 
         EditText name = input("نام مشتری");
         EditText phone = input("شماره تماس");
+
         l.addView(name);
         l.addView(phone);
 
@@ -92,13 +96,12 @@ public class MainActivity extends Activity {
                 return;
             }
 
-            SQLiteDatabase d = db.getWritableDatabase();
-
             ContentValues x = new ContentValues();
             x.put("name", n);
             x.put("phone", p);
 
-            d.insert("customers", null, x);
+            db.getWritableDatabase()
+                    .insert("customers", null, x);
 
             toast("مشتری ذخیره شد");
             customers();
@@ -112,11 +115,10 @@ public class MainActivity extends Activity {
     private void customerList() {
 
         LinearLayout l = layout();
+
         l.addView(title("لیست مشتریان", 30));
 
-        SQLiteDatabase d = db.getReadableDatabase();
-
-        Cursor c = d.rawQuery(
+        Cursor c = db.getReadableDatabase().rawQuery(
                 "SELECT id,name,phone FROM customers ORDER BY id",
                 null
         );
@@ -144,6 +146,310 @@ public class MainActivity extends Activity {
         c.close();
 
         button(l, "بازگشت", v -> customers());
+
+        setContentView(l);
+    }
+
+    // ================= قیمت روز =================
+
+    private void dailyPrice() {
+
+        LinearLayout l = layout();
+
+        l.addView(title("قیمت روز انگور", 30));
+
+        double current = getDailyPrice();
+
+        l.addView(card(
+                "قیمت فعلی هر کیلو:\n" +
+                money(current) +
+                " تومان"
+        ));
+
+        EditText price = input("قیمت جدید هر کیلو - تومان");
+
+        l.addView(price);
+
+        button(l, "ثبت قیمت روز", v -> {
+
+            double p = number(
+                    price.getText().toString()
+            );
+
+            if (p <= 0) {
+                toast("قیمت صحیح وارد کنید");
+                return;
+            }
+
+            ContentValues x = new ContentValues();
+            x.put("value", p);
+
+            SQLiteDatabase d =
+                    db.getWritableDatabase();
+
+            d.delete(
+                    "settings",
+                    "key=?",
+                    new String[]{"daily_price"}
+            );
+
+            d.insert("settings", null, xWithKey(x));
+
+            toast("قیمت روز ذخیره شد");
+            dailyPrice();
+        });
+
+        button(l, "بازگشت", v -> showHome());
+
+        setContentView(l);
+    }
+
+    private ContentValues xWithKey(ContentValues x) {
+        x.put("key", "daily_price");
+        return x;
+    }
+
+    private double getDailyPrice() {
+
+        Cursor c = db.getReadableDatabase().rawQuery(
+                "SELECT value FROM settings " +
+                "WHERE key='daily_price' LIMIT 1",
+                null
+        );
+
+        double result = 0;
+
+        if (c.moveToFirst()) {
+            result = c.getDouble(0);
+        }
+
+        c.close();
+
+        return result;
+    }
+
+    // ================= سفارش جدید =================
+
+    private void addOrder() {
+
+        LinearLayout l = layout();
+
+        l.addView(title("ثبت سفارش جدید", 30));
+
+        EditText name = input("نام و نام خانوادگی");
+        EditText phone = input("شماره موبایل");
+        EditText province = input("استان");
+        EditText city = input("شهر");
+        EditText address = input("آدرس");
+        EditText grape = input("نوع انگور");
+        EditText kg = input("وزن دلخواه - کیلو");
+        EditText deposit = input("مبلغ بیعانه");
+        EditText description = input("توضیحات");
+
+        l.addView(name);
+        l.addView(phone);
+        l.addView(province);
+        l.addView(city);
+        l.addView(address);
+        l.addView(grape);
+        l.addView(kg);
+
+        l.addView(card(
+                "قیمت روز هر کیلو: " +
+                money(getDailyPrice()) +
+                " تومان"
+        ));
+
+        l.addView(deposit);
+        l.addView(description);
+
+        button(l, "ثبت سفارش", v -> {
+
+            String n = name.getText().toString().trim();
+            String p = phone.getText().toString().trim();
+            String pr = province.getText().toString().trim();
+            String c = city.getText().toString().trim();
+            String a = address.getText().toString().trim();
+            String g = grape.getText().toString().trim();
+
+            double weight =
+                    number(kg.getText().toString());
+
+            double dep =
+                    number(deposit.getText().toString());
+
+            String desc =
+                    description.getText().toString().trim();
+
+            double daily = getDailyPrice();
+
+            if (n.isEmpty()) {
+                toast("نام و نام خانوادگی را وارد کنید");
+                return;
+            }
+
+            if (p.isEmpty()) {
+                toast("شماره موبایل را وارد کنید");
+                return;
+            }
+
+            if (weight <= 0) {
+                toast("وزن سفارش را وارد کنید");
+                return;
+            }
+
+            if (daily <= 0) {
+                toast("ابتدا قیمت روز را ثبت کنید");
+                return;
+            }
+
+            double total = weight * daily;
+            double balance = total - dep;
+
+            if (dep > total) {
+                toast("بیعانه نمی‌تواند بیشتر از مبلغ کل باشد");
+                return;
+            }
+
+            int customerNo = createCustomerIfNeeded(
+                    n,
+                    p
+            );
+
+            ContentValues x = new ContentValues();
+
+            x.put("customer_no", customerNo);
+            x.put("full_name", n);
+            x.put("phone", p);
+            x.put("province", pr);
+            x.put("city", c);
+            x.put("address", a);
+            x.put("grape_type", g);
+            x.put("kg", weight);
+            x.put("daily_price", daily);
+            x.put("total_amount", total);
+            x.put("deposit", dep);
+            x.put("balance", balance);
+            x.put("description", desc);
+            x.put("date", System.currentTimeMillis());
+
+            db.getWritableDatabase()
+                    .insert("orders", null, x);
+
+            toast(
+                    "سفارش ثبت شد\n" +
+                    "شماره مشتری: " +
+                    customerNo
+            );
+
+            showHome();
+        });
+
+        button(l, "بازگشت", v -> showHome());
+
+        setContentView(l);
+    }
+
+    // ================= ساخت مشتری خودکار =================
+
+    private int createCustomerIfNeeded(
+            String name,
+            String phone) {
+
+        SQLiteDatabase d =
+                db.getWritableDatabase();
+
+        Cursor c = d.rawQuery(
+                "SELECT id FROM customers " +
+                "WHERE phone=? LIMIT 1",
+                new String[]{phone}
+        );
+
+        if (c.moveToFirst()) {
+
+            int id = c.getInt(0);
+            c.close();
+
+            return id;
+        }
+
+        c.close();
+
+        ContentValues x = new ContentValues();
+
+        x.put("name", name);
+        x.put("phone", phone);
+
+        long id =
+                d.insert("customers", null, x);
+
+        return (int) id;
+    }
+
+    // ================= لیست سفارش‌ها =================
+
+    private void orderList() {
+
+        LinearLayout l = layout();
+
+        l.addView(title("سفارش‌های ZERIVA", 30));
+
+        Cursor c = db.getReadableDatabase().rawQuery(
+                "SELECT customer_no,full_name,phone," +
+                "province,city,grape_type,kg," +
+                "daily_price,total_amount,deposit,balance," +
+                "description FROM orders " +
+                "ORDER BY id DESC",
+                null
+        );
+
+        if (c.getCount() == 0) {
+
+            l.addView(
+                    text("هنوز سفارشی ثبت نشده است.")
+            );
+        }
+
+        while (c.moveToNext()) {
+
+            int customerNo = c.getInt(0);
+            String name = c.getString(1);
+            String phone = c.getString(2);
+            String province = c.getString(3);
+            String city = c.getString(4);
+            String grape = c.getString(5);
+
+            double kg = c.getDouble(6);
+            double price = c.getDouble(7);
+            double total = c.getDouble(8);
+            double deposit = c.getDouble(9);
+            double balance = c.getDouble(10);
+
+            String description = c.getString(11);
+
+            l.addView(card(
+                    "شماره مشتری: " + customerNo +
+                    "\nنام: " + name +
+                    "\nموبایل: " + phone +
+                    "\nاستان: " + province +
+                    "\nشهر: " + city +
+                    "\nنوع انگور: " + grape +
+                    "\nوزن: " + money(kg) + " کیلو" +
+                    "\nقیمت روز: " + money(price) + " تومان" +
+                    "\nمبلغ کل: " + money(total) + " تومان" +
+                    "\nبیعانه: " + money(deposit) + " تومان" +
+                    "\nمانده: " + money(balance) + " تومان" +
+                    "\nتوضیحات: " +
+                    (description == null ||
+                     description.isEmpty()
+                            ? "-"
+                            : description)
+            ));
+        }
+
+        c.close();
+
+        button(l, "بازگشت", v -> showHome());
 
         setContentView(l);
     }
@@ -187,22 +493,16 @@ public class MainActivity extends Activity {
             String desc =
                     description.getText().toString().trim();
 
-            String debtValue =
-                    debt.getText().toString().trim();
+            double dValue =
+                    number(debt.getText().toString());
 
-            String paymentValue =
-                    payment.getText().toString().trim();
+            double pValue =
+                    number(payment.getText().toString());
 
             if (customerNo.isEmpty()) {
                 toast("شماره مشتری را وارد کنید");
                 return;
             }
-
-            double dValue = number(debtValue);
-            double pValue = number(paymentValue);
-
-            SQLiteDatabase d =
-                    db.getWritableDatabase();
 
             ContentValues x = new ContentValues();
 
@@ -212,7 +512,8 @@ public class MainActivity extends Activity {
             x.put("payment", pValue);
             x.put("date", System.currentTimeMillis());
 
-            d.insert("transactions", null, x);
+            db.getWritableDatabase()
+                    .insert("transactions", null, x);
 
             toast("معامله ذخیره شد");
             accounts();
@@ -236,13 +537,16 @@ public class MainActivity extends Activity {
         );
 
         if (c.getCount() == 0) {
-            l.addView(text("هنوز معامله‌ای ثبت نشده است."));
+            l.addView(
+                    text("هنوز معامله‌ای ثبت نشده است.")
+            );
         }
 
         while (c.moveToNext()) {
 
             String customer = c.getString(0);
             String desc = c.getString(1);
+
             double debt = c.getDouble(2);
             double payment = c.getDouble(3);
 
@@ -264,7 +568,7 @@ public class MainActivity extends Activity {
         setContentView(l);
     }
 
-    // ================= خرید از باغدار =================
+    // ================= خرید =================
 
     private void purchase() {
 
@@ -282,9 +586,14 @@ public class MainActivity extends Activity {
 
         button(l, "ذخیره خرید", v -> {
 
-            String f = farmer.getText().toString().trim();
-            double k = number(kg.getText().toString());
-            double p = number(price.getText().toString());
+            String f =
+                    farmer.getText().toString().trim();
+
+            double k =
+                    number(kg.getText().toString());
+
+            double p =
+                    number(price.getText().toString());
 
             if (f.isEmpty()) {
                 toast("نام باغدار را وارد کنید");
@@ -330,399 +639,14 @@ public class MainActivity extends Activity {
 
         button(l, "ذخیره فروش", v -> {
 
-            String c = customer.getText().toString().trim();
-            String cityName = city.getText().toString().trim();
-            double k = number(kg.getText().toString());
-            double p = number(price.getText().toString());
+            String c =
+                    customer.getText().toString().trim();
 
-            if (c.isEmpty()) {
-                toast("نام مشتری را وارد کنید");
-                return;
-            }
+            String cityName =
+                    city.getText().toString().trim();
 
-            ContentValues x = new ContentValues();
+            double k =
+                    number(kg.getText().toString());
 
-            x.put("customer", c);
-            x.put("city", cityName);
-            x.put("kg", k);
-            x.put("price", p);
-            x.put("date", System.currentTimeMillis());
-
-            db.getWritableDatabase()
-                    .insert("sales", null, x);
-
-            toast("فروش ذخیره شد");
-            showHome();
-        });
-
-        button(l, "بازگشت", v -> showHome());
-
-        setContentView(l);
-    }
-
-    // ================= گزارش‌ها =================
-
-    private void reports() {
-
-        LinearLayout l = layout();
-
-        l.addView(title("گزارش‌های ZERIVA", 30));
-
-        SQLiteDatabase d = db.getReadableDatabase();
-
-        double purchases = sum(d, "purchases", "price");
-        double sales = sum(d, "sales", "price");
-        double purchasedKg = sum(d, "purchases", "kg");
-        double soldKg = sum(d, "sales", "kg");
-
-        l.addView(card(
-                "📦 خرید\n" +
-                "مقدار: " + money(purchasedKg) + " کیلو\n" +
-                "مبلغ: " + money(purchases)
-        ));
-
-        l.addView(card(
-                "🚚 فروش\n" +
-                "مقدار: " + money(soldKg) + " کیلو\n" +
-                "مبلغ: " + money(sales)
-        ));
-
-        l.addView(card(
-                "💰 فروش منهای خرید\n" +
-                money(sales - purchases)
-        ));
-
-        button(l, "بازگشت", v -> showHome());
-
-        setContentView(l);
-    }
-
-    // ================= ابزارهای ظاهری =================
-
-    private LinearLayout layout() {
-
-        LinearLayout l = new LinearLayout(this);
-
-        l.setOrientation(LinearLayout.VERTICAL);
-        l.setGravity(Gravity.CENTER_HORIZONTAL);
-
-        l.setPadding(
-                dp(25),
-                dp(40),
-                dp(25),
-                dp(25)
-        );
-
-        l.setBackgroundColor(GREEN);
-
-        return l;
-    }
-
-    private TextView title(String s, int size) {
-
-        TextView t = new TextView(this);
-
-        t.setText(s);
-        t.setTextColor(GOLD);
-        t.setTextSize(size);
-        t.setTypeface(
-                Typeface.DEFAULT,
-                Typeface.BOLD
-        );
-        t.setGravity(Gravity.CENTER);
-
-        t.setPadding(
-                0,
-                0,
-                0,
-                dp(25)
-        );
-
-        return t;
-    }
-
-    private TextView text(String s) {
-
-        TextView t = new TextView(this);
-
-        t.setText(s);
-        t.setTextColor(WHITE);
-        t.setTextSize(19);
-        t.setGravity(Gravity.CENTER);
-
-        t.setPadding(
-                dp(10),
-                dp(25),
-                dp(10),
-                dp(25)
-        );
-
-        return t;
-    }
-
-    private TextView card(String s) {
-
-        TextView t = new TextView(this);
-
-        t.setText(s);
-        t.setTextColor(WHITE);
-        t.setTextSize(17);
-        t.setGravity(Gravity.CENTER_VERTICAL);
-
-        t.setPadding(
-                dp(15),
-                dp(15),
-                dp(15),
-                dp(15)
-        );
-
-        GradientDrawable g =
-                new GradientDrawable();
-
-        g.setColor(GREEN);
-        g.setStroke(dp(1), GOLD);
-        g.setCornerRadius(dp(15));
-
-        t.setBackground(g);
-
-        LinearLayout.LayoutParams p =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                );
-
-        p.setMargins(
-                0,
-                dp(5),
-                0,
-                dp(5)
-        );
-
-        t.setLayoutParams(p);
-
-        return t;
-    }
-
-    private EditText input(String hint) {
-
-        EditText e = new EditText(this);
-
-        e.setHint(hint);
-        e.setHintTextColor(Color.LTGRAY);
-        e.setTextColor(WHITE);
-        e.setTextSize(18);
-        e.setSingleLine(true);
-
-        e.setPadding(
-                dp(15),
-                dp(8),
-                dp(15),
-                dp(8)
-        );
-
-        GradientDrawable g =
-                new GradientDrawable();
-
-        g.setColor(GREEN);
-        g.setStroke(dp(1), GOLD);
-        g.setCornerRadius(dp(15));
-
-        e.setBackground(g);
-
-        LinearLayout.LayoutParams p =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(60)
-                );
-
-        p.setMargins(
-                0,
-                dp(5),
-                0,
-                dp(5)
-        );
-
-        e.setLayoutParams(p);
-
-        return e;
-    }
-
-    private void button(
-            LinearLayout parent,
-            String text,
-            View.OnClickListener click) {
-
-        TextView b = new TextView(this);
-
-        b.setText(text);
-        b.setTextColor(GOLD);
-        b.setTextSize(18);
-        b.setTypeface(
-                Typeface.DEFAULT,
-                Typeface.BOLD
-        );
-        b.setGravity(Gravity.CENTER);
-        b.setIncludeFontPadding(true);
-
-        GradientDrawable g =
-                new GradientDrawable();
-
-        g.setColor(GREEN);
-        g.setStroke(dp(2), GOLD);
-        g.setCornerRadius(dp(18));
-
-        b.setBackground(g);
-
-        b.setOnClickListener(click);
-
-        LinearLayout.LayoutParams p =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        dp(60)
-                );
-
-        p.setMargins(
-                0,
-                dp(5),
-                0,
-                dp(5)
-        );
-
-        parent.addView(b, p);
-    }
-
-    // ================= ابزارهای داده =================
-
-    private double number(String s) {
-
-        try {
-            if (s == null || s.trim().isEmpty())
-                return 0;
-
-            return Double.parseDouble(
-                    s.replace(",", "")
-            );
-
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
-    private String money(double n) {
-
-        return String.format(
-                java.util.Locale.US,
-                "%.0f",
-                n
-        );
-    }
-
-    private double sum(
-            SQLiteDatabase d,
-            String table,
-            String column) {
-
-        Cursor c = d.rawQuery(
-                "SELECT COALESCE(SUM(" +
-                column +
-                "),0) FROM " +
-                table,
-                null
-        );
-
-        double result = 0;
-
-        if (c.moveToFirst())
-            result = c.getDouble(0);
-
-        c.close();
-
-        return result;
-    }
-
-    private void toast(String s) {
-
-        Toast.makeText(
-                this,
-                s,
-                Toast.LENGTH_SHORT
-        ).show();
-    }
-
-    private int dp(int value) {
-
-        return Math.round(
-                value *
-                getResources()
-                        .getDisplayMetrics()
-                        .density
-        );
-    }
-
-    @Override
-    public void onBackPressed() {
-        showHome();
-    }
-
-    // ================= دیتابیس =================
-
-    private class DB extends SQLiteOpenHelper {
-
-        DB() {
-            super(
-                    MainActivity.this,
-                    "ZERIVA.db",
-                    null,
-                    1
-            );
-        }
-
-        @Override
-        public void onCreate(SQLiteDatabase d) {
-
-            d.execSQL(
-                    "CREATE TABLE customers (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "name TEXT NOT NULL," +
-                    "phone TEXT)"
-            );
-
-            d.execSQL(
-                    "CREATE TABLE transactions (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "customer TEXT," +
-                    "description TEXT," +
-                    "debt REAL DEFAULT 0," +
-                    "payment REAL DEFAULT 0," +
-                    "date INTEGER)"
-            );
-
-            d.execSQL(
-                    "CREATE TABLE purchases (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "farmer TEXT," +
-                    "kg REAL DEFAULT 0," +
-                    "price REAL DEFAULT 0," +
-                    "date INTEGER)"
-            );
-
-            d.execSQL(
-                    "CREATE TABLE sales (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "customer TEXT," +
-                    "city TEXT," +
-                    "kg REAL DEFAULT 0," +
-                    "price REAL DEFAULT 0," +
-                    "date INTEGER)"
-            );
-        }
-
-        @Override
-        public void onUpgrade(
-                SQLiteDatabase d,
-                int oldVersion,
-                int newVersion) {
-
-        }
-    }
-            }
+            double p =
+                    number(price.getText().to
