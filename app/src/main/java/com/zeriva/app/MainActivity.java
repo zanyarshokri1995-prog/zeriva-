@@ -25,6 +25,9 @@ public class MainActivity extends Activity {
 
     private DB db;
 
+    // نمایش قیمت روز در صفحه ثبت سفارش
+    private TextView orderPriceView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -201,6 +204,9 @@ public class MainActivity extends Activity {
             d.insert("settings", null, x);
 
             toast("قیمت روز ذخیره شد");
+
+            // صفحه قیمت دوباره ساخته می‌شود
+            // و قیمت جدید را از دیتابیس می‌خواند
             dailyPrice();
         });
 
@@ -271,11 +277,21 @@ public class MainActivity extends Activity {
         l.addView(grape);
         l.addView(kg);
 
-        l.addView(card(
+        // قیمت روز فعلی
+        orderPriceView = card(
                 "قیمت روز هر کیلو: " +
                 money(getDailyPrice()) +
                 " تومان"
-        ));
+        );
+
+        l.addView(orderPriceView);
+
+        // دکمه بروزرسانی قیمت
+        button(
+                l,
+                "🔄 بروزرسانی قیمت روز",
+                v -> refreshOrderPrice()
+        );
 
         l.addView(deposit);
         l.addView(description);
@@ -309,6 +325,8 @@ public class MainActivity extends Activity {
             String desc =
                     description.getText().toString().trim();
 
+            // بسیار مهم:
+            // هنگام ثبت سفارش دوباره قیمت را از دیتابیس می‌خوانیم
             double daily =
                     getDailyPrice();
 
@@ -362,7 +380,10 @@ public class MainActivity extends Activity {
             x.put("address", a);
             x.put("grape_type", g);
             x.put("kg", weight);
+
+            // قیمت همان لحظه ثبت سفارش ذخیره می‌شود
             x.put("daily_price", daily);
+
             x.put("total_amount", total);
             x.put("deposit", dep);
             x.put("balance", balance);
@@ -381,7 +402,10 @@ public class MainActivity extends Activity {
             toast(
                     "سفارش ثبت شد\n" +
                     "شماره مشتری: " +
-                    customerNo
+                    customerNo +
+                    "\nقیمت ثبت‌شده: " +
+                    money(daily) +
+                    " تومان"
             );
 
             showHome();
@@ -390,6 +414,30 @@ public class MainActivity extends Activity {
         button(l, "بازگشت", v -> showHome());
 
         setPage(l);
+    }
+
+    // ================= بروزرسانی قیمت سفارش =================
+
+    private void refreshOrderPrice() {
+
+        if (orderPriceView == null) {
+            return;
+        }
+
+        double currentPrice =
+                getDailyPrice();
+
+        orderPriceView.setText(
+                "قیمت روز هر کیلو: " +
+                money(currentPrice) +
+                " تومان"
+        );
+
+        toast(
+                "قیمت روز بروزرسانی شد: " +
+                money(currentPrice) +
+                " تومان"
+        );
     }
 
     // ================= مشتری خودکار =================
@@ -503,7 +551,7 @@ public class MainActivity extends Activity {
                     money(kg) +
                     " کیلو" +
 
-                    "\nقیمت روز: " +
+                    "\nقیمت ثبت‌شده سفارش: " +
                     money(price) +
                     " تومان" +
 
@@ -1439,4 +1487,4 @@ public class MainActivity extends Activity {
             }
         }
     }
-        }
+}
