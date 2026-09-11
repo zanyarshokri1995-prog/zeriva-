@@ -1,14 +1,3 @@
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.6.1")
-    }
-}
-
 plugins {
-    id("com.android.application") apply false
+    id("com.android.application") version "8.6.1" apply false
 }
