@@ -3,7 +3,8 @@
 
     <application
         android:theme="@style/AppTheme"
-        android:label="ZERIVA"
+        android:label="زریوار"
+        android:icon="@drawable/ic_zaryivar_grape"
         android:allowBackup="true"
         android:supportsRtl="true">
 
