@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
@@ -18,11 +19,12 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
 
-    // =========================
+    // =========================================================
     // رنگ‌های ZERIVA
-    // =========================
+    // =========================================================
     private static final int DARK_GREEN = Color.rgb(15, 48, 30);
     private static final int GREEN = Color.rgb(23, 74, 42);
+    private static final int GREEN_LIGHT = Color.rgb(35, 92, 54);
     private static final int GOLD = Color.rgb(212, 175, 55);
     private static final int WHITE = Color.WHITE;
     private static final int LIGHT = Color.rgb(235, 235, 230);
@@ -31,9 +33,9 @@ public class MainActivity extends Activity {
     private LinearLayout root;
     private DB db;
 
-    // =========================
+    // =========================================================
     // استان‌ها و شهرها
-    // =========================
+    // =========================================================
     private final HashMap<String, String[]> provinces = new HashMap<>();
 
     @Override
@@ -47,7 +49,7 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // شهرها
+    // استان‌ها
     // =========================================================
     private void loadCities() {
 
@@ -146,7 +148,7 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // صفحه اصلی
+    // صفحه اصلی جدید
     // =========================================================
     private void showHome() {
 
@@ -159,35 +161,293 @@ public class MainActivity extends Activity {
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(18), dp(20), dp(18), dp(25));
+        content.setGravity(Gravity.CENTER_HORIZONTAL);
+        content.setPadding(dp(15), dp(18), dp(15), dp(30));
 
-        TextView logo = text("ZERIVA", 32, GOLD);
+        // -----------------------------------------------------
+        // نام برند
+        // -----------------------------------------------------
+        TextView logo = text("ZERIVA", 34, GOLD);
         logo.setTypeface(Typeface.DEFAULT_BOLD);
         logo.setGravity(Gravity.CENTER);
-        content.addView(logo, params(-1, 65));
 
-        TextView subtitle = text("Shani Grape • Mariwan • Zarivar", 15, LIGHT);
-        subtitle.setGravity(Gravity.CENTER);
-        content.addView(subtitle, params(-1, 35));
+        content.addView(logo, params(-1, 55));
 
-        addButton(content, "👥  مشتریان", v -> showCustomers());
-        addButton(content, "💰  حساب‌ها و معاملات", v -> showTransactions());
-        addButton(content, "🍇  خرید از باغدار", v -> showBuyFromFarmer());
-        addButton(content, "🚚  فروش و ارسال", v -> showSales());
-        addButton(content, "📊  گزارش‌ها", v -> showReports());
+        TextView title = text("زریوار", 20, WHITE);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setGravity(Gravity.CENTER);
 
-        TextView info = text(
-                "\nZERIVA\nانگور شانی مریوان\nدریاچه زریوار\n\nنسخه مدیریت کسب‌وکار",
+        content.addView(title, params(-1, 38));
+
+        TextView subtitle = text(
+                "Shani Grape • Mariwan • Zarivar",
                 14,
                 LIGHT
         );
-        info.setGravity(Gravity.CENTER);
-        content.addView(info, params(-1, -2));
+        subtitle.setGravity(Gravity.CENTER);
+
+        content.addView(subtitle, params(-1, 35));
+
+        // -----------------------------------------------------
+        // کارت اطلاعات
+        // -----------------------------------------------------
+        LinearLayout infoCard = new LinearLayout(this);
+        infoCard.setOrientation(LinearLayout.VERTICAL);
+        infoCard.setGravity(Gravity.CENTER);
+        infoCard.setPadding(
+                dp(15),
+                dp(10),
+                dp(15),
+                dp(10)
+        );
+
+        GradientDrawable infoBackground =
+                new GradientDrawable();
+
+        infoBackground.setColor(GREEN);
+        infoBackground.setCornerRadius(dp(18));
+        infoBackground.setStroke(dp(1), GOLD);
+
+        infoCard.setBackground(infoBackground);
+
+        TextView infoTitle =
+                text("مدیریت کسب‌وکار ZERIVA", 17, GOLD);
+
+        infoTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        infoTitle.setGravity(Gravity.CENTER);
+
+        infoCard.addView(infoTitle, params(-1, 35));
+
+        TextView infoText =
+                text(
+                        "انگور شانی مریوان • دریاچه زریوار",
+                        13,
+                        LIGHT
+                );
+
+        infoText.setGravity(Gravity.CENTER);
+
+        infoCard.addView(infoText, params(-1, 30));
+
+        LinearLayout.LayoutParams infoParams =
+                new LinearLayout.LayoutParams(
+                        -1,
+                        dp(78)
+                );
+
+        infoParams.setMargins(
+                0,
+                dp(5),
+                0,
+                dp(18)
+        );
+
+        content.addView(infoCard, infoParams);
+
+        // -----------------------------------------------------
+        // منوهای دایره‌ای
+        // -----------------------------------------------------
+        LinearLayout row1 = new LinearLayout(this);
+        row1.setOrientation(LinearLayout.HORIZONTAL);
+        row1.setGravity(Gravity.CENTER);
+
+        row1.addView(
+                circleMenu(
+                        "👥",
+                        "مشتریان",
+                        v -> showCustomers()
+                ),
+                circleParams()
+        );
+
+        row1.addView(
+                circleMenu(
+                        "💰",
+                        "حساب‌ها",
+                        v -> showTransactions()
+                ),
+                circleParams()
+        );
+
+        row1.addView(
+                circleMenu(
+                        "🍇",
+                        "خرید",
+                        v -> showBuyFromFarmer()
+                ),
+                circleParams()
+        );
+
+        content.addView(row1);
+
+        LinearLayout row2 = new LinearLayout(this);
+        row2.setOrientation(LinearLayout.HORIZONTAL);
+        row2.setGravity(Gravity.CENTER);
+
+        row2.addView(
+                circleMenu(
+                        "🚚",
+                        "فروش",
+                        v -> showSales()
+                ),
+                circleParams()
+        );
+
+        row2.addView(
+                circleMenu(
+                        "📊",
+                        "گزارش‌ها",
+                        v -> showReports()
+                ),
+                circleParams()
+        );
+
+        // دایره ششم برای آینده
+        row2.addView(
+                circleMenu(
+                        "⚙",
+                        "بیشتر",
+                        v -> showMore()
+                ),
+                circleParams()
+        );
+
+        content.addView(row2);
+
+        // -----------------------------------------------------
+        // متن پایین صفحه
+        // -----------------------------------------------------
+        TextView footer =
+                text(
+                        "\nZERIVA\nPremium Shani Grape\nMariwan • Zarivar",
+                        13,
+                        LIGHT
+                );
+
+        footer.setGravity(Gravity.CENTER);
+        content.addView(
+                footer,
+                params(-1, 100)
+        );
 
         scroll.addView(content);
         root.addView(scroll);
 
         setContentView(root);
+    }
+
+    // =========================================================
+    // منوی دایره‌ای
+    // =========================================================
+    private LinearLayout circleMenu(
+            String icon,
+            String title,
+            View.OnClickListener listener) {
+
+        LinearLayout box =
+                new LinearLayout(this);
+
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
+
+        // دایره
+        TextView circle =
+                new TextView(this);
+
+        circle.setText(icon);
+        circle.setTextSize(27);
+        circle.setGravity(Gravity.CENTER);
+        circle.setTextColor(WHITE);
+
+        GradientDrawable circleBackground =
+                new GradientDrawable();
+
+        circleBackground.setShape(
+                GradientDrawable.OVAL
+        );
+
+        circleBackground.setColor(GREEN);
+        circleBackground.setStroke(
+                dp(2),
+                GOLD
+        );
+
+        circle.setBackground(circleBackground);
+        circle.setElevation(dp(4));
+
+        box.addView(
+                circle,
+                new LinearLayout.LayoutParams(
+                        dp(82),
+                        dp(82)
+                )
+        );
+
+        TextView label =
+                text(title, 14, LIGHT);
+
+        label.setGravity(Gravity.CENTER);
+        label.setTypeface(Typeface.DEFAULT_BOLD);
+
+        box.addView(
+                label,
+                new LinearLayout.LayoutParams(
+                        dp(92),
+                        dp(35)
+                )
+        );
+
+        box.setOnClickListener(listener);
+        circle.setOnClickListener(listener);
+
+        return box;
+    }
+
+    private LinearLayout.LayoutParams circleParams() {
+
+        LinearLayout.LayoutParams p =
+                new LinearLayout.LayoutParams(
+                        0,
+                        dp(130),
+                        1
+                );
+
+        p.setMargins(
+                dp(3),
+                dp(5),
+                dp(3),
+                dp(5)
+        );
+
+        return p;
+    }
+
+    // =========================================================
+    // منوی بیشتر
+    // =========================================================
+    private void showMore() {
+
+        LinearLayout page = page("بیشتر");
+
+        TextView info = text(
+                "این بخش برای امکانات آینده ZERIVA آماده شده است.",
+                16,
+                LIGHT
+        );
+
+        info.setGravity(Gravity.CENTER);
+        info.setPadding(
+                dp(10),
+                dp(20),
+                dp(10),
+                dp(20)
+        );
+
+        page.addView(info);
+
+        addBack(page);
+
+        setPage(page);
     }
 
     // =========================================================
@@ -197,7 +457,11 @@ public class MainActivity extends Activity {
 
         LinearLayout page = page("مشتریان");
 
-        addButton(page, "➕ ثبت مشتری جدید", v -> addCustomer());
+        addButton(
+                page,
+                "➕ ثبت مشتری جدید",
+                v -> addCustomer()
+        );
 
         Cursor c = db.getReadableDatabase().rawQuery(
                 "SELECT id,name,phone FROM customers ORDER BY id ASC",
@@ -205,7 +469,14 @@ public class MainActivity extends Activity {
         );
 
         if (c.getCount() == 0) {
-            page.addView(text("هنوز مشتری ثبت نشده است.", 16, LIGHT));
+
+            page.addView(
+                    text(
+                            "هنوز مشتری ثبت نشده است.",
+                            16,
+                            LIGHT
+                    )
+            );
         }
 
         while (c.moveToNext()) {
@@ -214,21 +485,36 @@ public class MainActivity extends Activity {
             String name = c.getString(1);
             String phone = c.getString(2);
 
-            TextView item = text(
-                    "شماره مشتری: " + id +
-                            "\nنام: " + name +
-                            "\nتماس: " + phone,
-                    16,
-                    DARK
+            TextView item =
+                    text(
+                            "شماره مشتری: " + id +
+                                    "\nنام: " + name +
+                                    "\nتماس: " + phone,
+                            16,
+                            DARK
+                    );
+
+            item.setPadding(
+                    dp(15),
+                    dp(15),
+                    dp(15),
+                    dp(15)
             );
 
-            item.setPadding(dp(15), dp(15), dp(15), dp(15));
             item.setBackgroundColor(Color.WHITE);
 
             LinearLayout.LayoutParams p =
-                    new LinearLayout.LayoutParams(-1, -2);
+                    new LinearLayout.LayoutParams(
+                            -1,
+                            -2
+                    );
 
-            p.setMargins(0, dp(5), 0, dp(5));
+            p.setMargins(
+                    0,
+                    dp(5),
+                    0,
+                    dp(5)
+            );
 
             page.addView(item, p);
         }
@@ -251,27 +537,48 @@ public class MainActivity extends Activity {
         page.addView(name);
         page.addView(phone);
 
-        addButton(page, "💾 ذخیره مشتری", v -> {
+        addButton(
+                page,
+                "💾 ذخیره مشتری",
+                v -> {
 
-            String n = name.getText().toString().trim();
-            String p = phone.getText().toString().trim();
+                    String n =
+                            name.getText()
+                                    .toString()
+                                    .trim();
 
-            if (n.isEmpty()) {
-                toast("نام مشتری را وارد کنید");
-                return;
-            }
+                    String p =
+                            phone.getText()
+                                    .toString()
+                                    .trim();
 
-            SQLiteDatabase database = db.getWritableDatabase();
+                    if (n.isEmpty()) {
 
-            database.execSQL(
-                    "INSERT INTO customers(name,phone) VALUES(?,?)",
-                    new Object[]{n, p}
-            );
+                        toast(
+                                "نام مشتری را وارد کنید"
+                        );
 
-            toast("مشتری با موفقیت ثبت شد");
+                        return;
+                    }
 
-            showCustomers();
-        });
+                    SQLiteDatabase database =
+                            db.getWritableDatabase();
+
+                    database.execSQL(
+                            "INSERT INTO customers(name,phone) VALUES(?,?)",
+                            new Object[]{
+                                    n,
+                                    p
+                            }
+                    );
+
+                    toast(
+                            "مشتری با موفقیت ثبت شد"
+                    );
+
+                    showCustomers();
+                }
+        );
 
         addBack(page);
 
@@ -283,47 +590,78 @@ public class MainActivity extends Activity {
     // =========================================================
     private void showBuyFromFarmer() {
 
-        LinearLayout page = page("خرید از باغدار");
+        LinearLayout page =
+                page("خرید از باغدار");
 
-        EditText farmer = input("نام باغدار");
-        EditText weight = input("وزن خرید (کیلو)");
-        EditText price = input("قیمت هر کیلو");
+        EditText farmer =
+                input("نام باغدار");
+
+        EditText weight =
+                input("وزن خرید (کیلو)");
+
+        EditText price =
+                input("قیمت هر کیلو");
 
         page.addView(farmer);
         page.addView(weight);
         page.addView(price);
 
-        addButton(page, "💾 ثبت خرید", v -> {
+        addButton(
+                page,
+                "💾 ثبت خرید",
+                v -> {
 
-            if (farmer.getText().toString().trim().isEmpty()) {
-                toast("نام باغدار را وارد کنید");
-                return;
-            }
+                    if (farmer.getText()
+                            .toString()
+                            .trim()
+                            .isEmpty()) {
 
-            double w = number(weight);
-            double pr = number(price);
+                        toast(
+                                "نام باغدار را وارد کنید"
+                        );
 
-            if (w <= 0) {
-                toast("وزن را وارد کنید");
-                return;
-            }
-
-            double total = w * pr;
-
-            db.getWritableDatabase().execSQL(
-                    "INSERT INTO purchases(farmer,weight,price,total) VALUES(?,?,?,?)",
-                    new Object[]{
-                            farmer.getText().toString(),
-                            w,
-                            pr,
-                            total
+                        return;
                     }
-            );
 
-            toast("خرید ثبت شد\nمبلغ: " + money(total));
+                    double w =
+                            number(weight);
 
-            showHome();
-        });
+                    double pr =
+                            number(price);
+
+                    if (w <= 0) {
+
+                        toast(
+                                "وزن را وارد کنید"
+                        );
+
+                        return;
+                    }
+
+                    double total =
+                            w * pr;
+
+                    db.getWritableDatabase()
+                            .execSQL(
+                                    "INSERT INTO purchases(farmer,weight,price,total) " +
+                                            "VALUES(?,?,?,?)",
+                                    new Object[]{
+                                            farmer.getText()
+                                                    .toString(),
+                                            w,
+                                            pr,
+                                            total
+                                    }
+                            );
+
+                    toast(
+                            "خرید ثبت شد\nمبلغ: " +
+                                    money(total)
+                    );
+
+                    showHome();
+                }
+        );
 
         addBack(page);
 
@@ -335,30 +673,63 @@ public class MainActivity extends Activity {
     // =========================================================
     private void showSales() {
 
-        LinearLayout page = page("فروش و ارسال");
+        LinearLayout page =
+                page("فروش و ارسال");
 
-        final Spinner province = spinner(
-                new ArrayList<>(provinces.keySet())
+        final Spinner province =
+                spinner(
+                        new ArrayList<>(
+                                provinces.keySet()
+                        )
+                );
+
+        final Spinner city =
+                new Spinner(this);
+
+        EditText customer =
+                input("نام مشتری");
+
+        EditText weight =
+                input("وزن سفارش (کیلو)");
+
+        EditText price =
+                input("قیمت هر کیلو");
+
+        TextView totalText =
+                text(
+                        "مبلغ کل: 0 تومان",
+                        18,
+                        GOLD
+                );
+
+        totalText.setGravity(
+                Gravity.CENTER
         );
 
-        final Spinner city = new Spinner(this);
+        page.addView(
+                label("استان")
+        );
 
-        EditText customer = input("نام مشتری");
-        EditText weight = input("وزن سفارش (کیلو)");
-        EditText price = input("قیمت هر کیلو");
-
-        TextView totalText = text("مبلغ کل: 0", 18, GOLD);
-
-        page.addView(label("استان"));
         page.addView(province);
 
-        page.addView(label("شهر"));
+        page.addView(
+                label("شهر")
+        );
+
         page.addView(city);
 
-        updateCities(city, province.getSelectedItem().toString());
+        if (province.getSelectedItem() != null) {
+
+            updateCities(
+                    city,
+                    province.getSelectedItem()
+                            .toString()
+            );
+        }
 
         province.setOnItemSelectedListener(
-                new android.widget.AdapterView.OnItemSelectedListener() {
+                new android.widget.AdapterView
+                        .OnItemSelectedListener() {
 
                     @Override
                     public void onItemSelected(
@@ -369,7 +740,9 @@ public class MainActivity extends Activity {
 
                         updateCities(
                                 city,
-                                province.getItemAtPosition(position).toString()
+                                province
+                                        .getItemAtPosition(position)
+                                        .toString()
                         );
                     }
 
@@ -383,109 +756,177 @@ public class MainActivity extends Activity {
         page.addView(customer);
         page.addView(weight);
 
+        // -----------------------------------------------------
         // کنترل وزن
-        LinearLayout weightRow = new LinearLayout(this);
-        weightRow.setOrientation(LinearLayout.HORIZONTAL);
-        weightRow.setGravity(Gravity.CENTER);
+        // -----------------------------------------------------
+        LinearLayout weightRow =
+                new LinearLayout(this);
 
-        Button minus = new Button(this);
+        weightRow.setOrientation(
+                LinearLayout.HORIZONTAL
+        );
+
+        weightRow.setGravity(
+                Gravity.CENTER
+        );
+
+        Button minus =
+                new Button(this);
+
         minus.setText("−");
+        minus.setTextSize(22);
 
-        Button plus = new Button(this);
+        Button plus =
+                new Button(this);
+
         plus.setText("+");
+        plus.setTextSize(22);
 
-        weightRow.addView(minus, params(80, 55));
-        weightRow.addView(plus, params(80, 55));
+        weightRow.addView(
+                minus,
+                params(80, 55)
+        );
+
+        weightRow.addView(
+                plus,
+                params(80, 55)
+        );
 
         page.addView(weightRow);
 
         page.addView(price);
         page.addView(totalText);
 
-        View.OnClickListener calculate = v -> {
+        View.OnClickListener calculate =
+                v -> {
 
-            double w = number(weight);
-            double p = number(price);
+                    double w =
+                            number(weight);
 
-            totalText.setText(
-                    "مبلغ کل: " + money(w * p)
-            );
-        };
+                    double p =
+                            number(price);
 
-        minus.setOnClickListener(v -> {
+                    totalText.setText(
+                            "مبلغ کل: " +
+                                    money(w * p)
+                    );
+                };
 
-            double w = number(weight);
+        minus.setOnClickListener(
+                v -> {
 
-            w -= 100;
+                    double w =
+                            number(weight);
 
-            if (w < 0) w = 0;
+                    w -= 100;
 
-            weight.setText(formatNumber(w));
-
-            calculate.onClick(v);
-        });
-
-        plus.setOnClickListener(v -> {
-
-            double w = number(weight);
-
-            w += 100;
-
-            weight.setText(formatNumber(w));
-
-            calculate.onClick(v);
-        });
-
-        addButton(page, "📦 ثبت سفارش", v -> {
-
-            String cust = customer.getText().toString().trim();
-
-            if (cust.isEmpty()) {
-                toast("نام مشتری را وارد کنید");
-                return;
-            }
-
-            double w = number(weight);
-            double p = number(price);
-
-            if (w <= 0) {
-                toast("وزن سفارش را وارد کنید");
-                return;
-            }
-
-            String selectedProvince =
-                    province.getSelectedItem().toString();
-
-            String selectedCity =
-                    city.getSelectedItem().toString();
-
-            double total = w * p;
-
-            db.getWritableDatabase().execSQL(
-                    "INSERT INTO orders(customer,province,city,weight,price,total) " +
-                            "VALUES(?,?,?,?,?,?)",
-                    new Object[]{
-                            cust,
-                            selectedProvince,
-                            selectedCity,
-                            w,
-                            p,
-                            total
+                    if (w < 0) {
+                        w = 0;
                     }
-            );
 
-            toast(
-                    "سفارش ثبت شد\n" +
-                            selectedCity +
-                            " — " +
-                            formatNumber(w) +
-                            " کیلو"
-            );
+                    weight.setText(
+                            formatNumber(w)
+                    );
 
-            showSales();
-        });
+                    calculate.onClick(v);
+                }
+        );
 
-        addButton(page, "📊 جمع سفارش شهرها", v -> showCityOrders());
+        plus.setOnClickListener(
+                v -> {
+
+                    double w =
+                            number(weight);
+
+                    w += 100;
+
+                    weight.setText(
+                            formatNumber(w)
+                    );
+
+                    calculate.onClick(v);
+                }
+        );
+
+        addButton(
+                page,
+                "📦 ثبت سفارش",
+                v -> {
+
+                    String cust =
+                            customer.getText()
+                                    .toString()
+                                    .trim();
+
+                    if (cust.isEmpty()) {
+
+                        toast(
+                                "نام مشتری را وارد کنید"
+                        );
+
+                        return;
+                    }
+
+                    double w =
+                            number(weight);
+
+                    double p =
+                            number(price);
+
+                    if (w <= 0) {
+
+                        toast(
+                                "وزن سفارش را وارد کنید"
+                        );
+
+                        return;
+                    }
+
+                    String selectedProvince =
+                            province
+                                    .getSelectedItem()
+                                    .toString();
+
+                    String selectedCity =
+                            city
+                                    .getSelectedItem()
+                                    .toString();
+
+                    double total =
+                            w * p;
+
+                    db.getWritableDatabase()
+                            .execSQL(
+                                    "INSERT INTO orders(" +
+                                            "customer,province,city,weight,price,total" +
+                                            ") VALUES(?,?,?,?,?,?)",
+                                    new Object[]{
+                                            cust,
+                                            selectedProvince,
+                                            selectedCity,
+                                            w,
+                                            p,
+                                            total
+                                    }
+                            );
+
+                    toast(
+                            "سفارش ثبت شد\n" +
+                                    selectedCity +
+                                    " — " +
+                                    formatNumber(w) +
+                                    " کیلو"
+                    );
+
+                    showSales();
+                }
+        );
+
+        addButton(
+                page,
+                "📊 جمع سفارش شهرها",
+                v -> showCityOrders()
+        );
 
         addBack(page);
 
@@ -495,23 +936,32 @@ public class MainActivity extends Activity {
     // =========================================================
     // شهرها
     // =========================================================
-    private void updateCities(Spinner citySpinner, String province) {
+    private void updateCities(
+            Spinner citySpinner,
+            String province) {
 
-        String[] cities = provinces.get(province);
+        String[] cities =
+                provinces.get(province);
 
         if (cities == null) {
-            cities = new String[]{"انتخاب شهر"};
+
+            cities =
+                    new String[]{
+                            "انتخاب شهر"
+                    };
         }
 
         ArrayAdapter<String> adapter =
                 new ArrayAdapter<>(
                         this,
-                        android.R.layout.simple_spinner_item,
+                        android.R.layout
+                                .simple_spinner_item,
                         cities
                 );
 
         adapter.setDropDownViewResource(
-                android.R.layout.simple_spinner_dropdown_item
+                android.R.layout
+                        .simple_spinner_dropdown_item
         );
 
         citySpinner.setAdapter(adapter);
@@ -522,13 +972,20 @@ public class MainActivity extends Activity {
     // =========================================================
     private void showCityOrders() {
 
-        LinearLayout page = page("جمع سفارش شهرها");
+        LinearLayout page =
+                page("جمع سفارش شهرها");
 
-        Cursor c = db.getReadableDatabase().rawQuery(
-                "SELECT city, SUM(weight), COUNT(*) " +
-                        "FROM orders GROUP BY city ORDER BY city",
-                null
-        );
+        Cursor c =
+                db.getReadableDatabase()
+                        .rawQuery(
+                                "SELECT city, " +
+                                        "SUM(weight), " +
+                                        "COUNT(*) " +
+                                        "FROM orders " +
+                                        "GROUP BY city " +
+                                        "ORDER BY city",
+                                null
+                        );
 
         if (c.getCount() == 0) {
 
@@ -544,20 +1001,26 @@ public class MainActivity extends Activity {
 
             while (c.moveToNext()) {
 
-                String city = c.getString(0);
-                double weight = c.getDouble(1);
-                int count = c.getInt(2);
+                String city =
+                        c.getString(0);
 
-                TextView item = text(
-                        city +
-                                "\nجمع سفارش: " +
-                                formatNumber(weight) +
-                                " کیلو" +
-                                "\nتعداد سفارش: " +
-                                count,
-                        17,
-                        DARK
-                );
+                double weight =
+                        c.getDouble(1);
+
+                int count =
+                        c.getInt(2);
+
+                TextView item =
+                        text(
+                                city +
+                                        "\nجمع سفارش: " +
+                                        formatNumber(weight) +
+                                        " کیلو" +
+                                        "\nتعداد سفارش: " +
+                                        count,
+                                17,
+                                DARK
+                        );
 
                 item.setPadding(
                         dp(15),
@@ -566,12 +1029,22 @@ public class MainActivity extends Activity {
                         dp(15)
                 );
 
-                item.setBackgroundColor(Color.WHITE);
+                item.setBackgroundColor(
+                        Color.WHITE
+                );
 
                 LinearLayout.LayoutParams p =
-                        new LinearLayout.LayoutParams(-1, -2);
+                        new LinearLayout.LayoutParams(
+                                -1,
+                                -2
+                        );
 
-                p.setMargins(0, dp(5), 0, dp(5));
+                p.setMargins(
+                        0,
+                        dp(5),
+                        0,
+                        dp(5)
+                );
 
                 page.addView(item, p);
             }
@@ -589,7 +1062,8 @@ public class MainActivity extends Activity {
     // =========================================================
     private void showTransactions() {
 
-        LinearLayout page = page("حساب‌ها و معاملات");
+        LinearLayout page =
+                page("حساب‌ها و معاملات");
 
         addButton(
                 page,
@@ -597,25 +1071,50 @@ public class MainActivity extends Activity {
                 v -> addTransaction()
         );
 
-        Cursor c = db.getReadableDatabase().rawQuery(
-                "SELECT person,description,debt,payment " +
-                        "FROM transactions ORDER BY id DESC",
-                null
-        );
+        Cursor c =
+                db.getReadableDatabase()
+                        .rawQuery(
+                                "SELECT person,description,debt,payment " +
+                                        "FROM transactions " +
+                                        "ORDER BY id DESC",
+                                null
+                        );
 
-        while (c.moveToNext()) {
-
-            String person = c.getString(0);
-            String description = c.getString(1);
-            double debt = c.getDouble(2);
-            double payment = c.getDouble(3);
+        if (c.getCount() == 0) {
 
             page.addView(
                     text(
-                            "طرف حساب: " + person +
-                                    "\nشرح: " + description +
-                                    "\nبدهکار: " + money(debt) +
-                                    "\nپرداخت: " + money(payment),
+                            "هنوز معامله‌ای ثبت نشده است.",
+                            16,
+                            LIGHT
+                    )
+            );
+        }
+
+        while (c.moveToNext()) {
+
+            String person =
+                    c.getString(0);
+
+            String description =
+                    c.getString(1);
+
+            double debt =
+                    c.getDouble(2);
+
+            double payment =
+                    c.getDouble(3);
+
+            page.addView(
+                    text(
+                            "طرف حساب: " +
+                                    person +
+                                    "\nشرح: " +
+                                    description +
+                                    "\nبدهکار: " +
+                                    money(debt) +
+                                    "\nپرداخت: " +
+                                    money(payment),
                             16,
                             LIGHT
                     )
@@ -634,35 +1133,53 @@ public class MainActivity extends Activity {
     // =========================================================
     private void addTransaction() {
 
-        LinearLayout page = page("ثبت معامله");
+        LinearLayout page =
+                page("ثبت معامله");
 
-        EditText person = input("نام طرف حساب");
-        EditText description = input("شرح معامله");
-        EditText debt = input("بدهکار");
-        EditText payment = input("پرداخت");
+        EditText person =
+                input("نام طرف حساب");
+
+        EditText description =
+                input("شرح معامله");
+
+        EditText debt =
+                input("بدهکار");
+
+        EditText payment =
+                input("پرداخت");
 
         page.addView(person);
         page.addView(description);
         page.addView(debt);
         page.addView(payment);
 
-        addButton(page, "💾 ذخیره معامله", v -> {
+        addButton(
+                page,
+                "💾 ذخیره معامله",
+                v -> {
 
-            db.getWritableDatabase().execSQL(
-                    "INSERT INTO transactions(person,description,debt,payment) " +
-                            "VALUES(?,?,?,?)",
-                    new Object[]{
-                            person.getText().toString(),
-                            description.getText().toString(),
-                            number(debt),
-                            number(payment)
-                    }
-            );
+                    db.getWritableDatabase()
+                            .execSQL(
+                                    "INSERT INTO transactions(" +
+                                            "person,description,debt,payment" +
+                                            ") VALUES(?,?,?,?)",
+                                    new Object[]{
+                                            person.getText()
+                                                    .toString(),
+                                            description.getText()
+                                                    .toString(),
+                                            number(debt),
+                                            number(payment)
+                                    }
+                            );
 
-            toast("معامله ذخیره شد");
+                    toast(
+                            "معامله ذخیره شد"
+                    );
 
-            showTransactions();
-        });
+                    showTransactions();
+                }
+        );
 
         addBack(page);
 
@@ -674,28 +1191,42 @@ public class MainActivity extends Activity {
     // =========================================================
     private void showReports() {
 
-        LinearLayout page = page("گزارش‌ها");
+        LinearLayout page =
+                page("گزارش‌ها");
 
-        SQLiteDatabase database = db.getReadableDatabase();
+        SQLiteDatabase database =
+                db.getReadableDatabase();
 
-        Cursor orders = database.rawQuery(
-                "SELECT COUNT(*), COALESCE(SUM(weight),0), " +
-                        "COALESCE(SUM(total),0) FROM orders",
-                null
-        );
+        Cursor orders =
+                database.rawQuery(
+                        "SELECT COUNT(*), " +
+                                "COALESCE(SUM(weight),0), " +
+                                "COALESCE(SUM(total),0) " +
+                                "FROM orders",
+                        null
+                );
 
         if (orders.moveToFirst()) {
 
-            int count = orders.getInt(0);
-            double weight = orders.getDouble(1);
-            double total = orders.getDouble(2);
+            int count =
+                    orders.getInt(0);
+
+            double weight =
+                    orders.getDouble(1);
+
+            double total =
+                    orders.getDouble(2);
 
             page.addView(
                     text(
                             "📦 سفارش‌ها\n" +
-                                    "تعداد: " + count +
-                                    "\nوزن کل: " + formatNumber(weight) + " کیلو" +
-                                    "\nمبلغ کل: " + money(total),
+                                    "تعداد: " +
+                                    count +
+                                    "\nوزن کل: " +
+                                    formatNumber(weight) +
+                                    " کیلو" +
+                                    "\nمبلغ کل: " +
+                                    money(total),
                             17,
                             LIGHT
                     )
@@ -704,24 +1235,36 @@ public class MainActivity extends Activity {
 
         orders.close();
 
-        Cursor purchases = database.rawQuery(
-                "SELECT COUNT(*), COALESCE(SUM(weight),0), " +
-                        "COALESCE(SUM(total),0) FROM purchases",
-                null
-        );
+        Cursor purchases =
+                database.rawQuery(
+                        "SELECT COUNT(*), " +
+                                "COALESCE(SUM(weight),0), " +
+                                "COALESCE(SUM(total),0) " +
+                                "FROM purchases",
+                        null
+                );
 
         if (purchases.moveToFirst()) {
 
-            int count = purchases.getInt(0);
-            double weight = purchases.getDouble(1);
-            double total = purchases.getDouble(2);
+            int count =
+                    purchases.getInt(0);
+
+            double weight =
+                    purchases.getDouble(1);
+
+            double total =
+                    purchases.getDouble(2);
 
             page.addView(
                     text(
                             "\n🍇 خرید از باغدار\n" +
-                                    "تعداد خرید: " + count +
-                                    "\nوزن کل: " + formatNumber(weight) + " کیلو" +
-                                    "\nمبلغ کل: " + money(total),
+                                    "تعداد خرید: " +
+                                    count +
+                                    "\nوزن کل: " +
+                                    formatNumber(weight) +
+                                    " کیلو" +
+                                    "\nمبلغ کل: " +
+                                    money(total),
                             17,
                             LIGHT
                     )
@@ -736,39 +1279,70 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // ابزارهای UI
+    // ابزار صفحه
     // =========================================================
-    private LinearLayout page(String title) {
+    private LinearLayout page(
+            String title) {
 
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout layout =
+                new LinearLayout(this);
+
+        layout.setOrientation(
+                LinearLayout.VERTICAL
+        );
+
         layout.setPadding(
                 dp(18),
                 dp(20),
                 dp(18),
                 dp(30)
         );
-        layout.setBackgroundColor(DARK_GREEN);
 
-        TextView titleView = text(title, 25, GOLD);
-        titleView.setTypeface(Typeface.DEFAULT_BOLD);
-        titleView.setGravity(Gravity.CENTER);
+        layout.setBackgroundColor(
+                DARK_GREEN
+        );
 
-        layout.addView(titleView, params(-1, 65));
+        TextView titleView =
+                text(
+                        title,
+                        25,
+                        GOLD
+                );
+
+        titleView.setTypeface(
+                Typeface.DEFAULT_BOLD
+        );
+
+        titleView.setGravity(
+                Gravity.CENTER
+        );
+
+        layout.addView(
+                titleView,
+                params(-1, 65)
+        );
 
         return layout;
     }
 
-    private void setPage(LinearLayout page) {
+    private void setPage(
+            LinearLayout page) {
 
-        ScrollView scroll = new ScrollView(this);
+        ScrollView scroll =
+                new ScrollView(this);
+
         scroll.setFillViewport(true);
+
         scroll.addView(page);
 
         setContentView(scroll);
     }
 
-    private void addBack(LinearLayout layout) {
+    // =========================================================
+    // بازگشت
+    // =========================================================
+    private void addBack(
+            LinearLayout layout) {
 
         addButton(
                 layout,
@@ -777,17 +1351,23 @@ public class MainActivity extends Activity {
         );
     }
 
+    // =========================================================
+    // دکمه معمولی
+    // =========================================================
     private void addButton(
             LinearLayout layout,
             String title,
             View.OnClickListener listener) {
 
-        Button button = new Button(this);
+        Button button =
+                new Button(this);
 
         button.setText(title);
         button.setTextSize(16);
         button.setTextColor(GOLD);
-        button.setTypeface(Typeface.DEFAULT_BOLD);
+        button.setTypeface(
+                Typeface.DEFAULT_BOLD
+        );
         button.setAllCaps(false);
         button.setBackgroundColor(GREEN);
         button.setOnClickListener(listener);
@@ -808,37 +1388,66 @@ public class MainActivity extends Activity {
         layout.addView(button, p);
     }
 
-    private TextView label(String s) {
+    // =========================================================
+    // برچسب
+    // =========================================================
+    private TextView label(
+            String s) {
 
-        TextView t = text(s, 15, GOLD);
-        t.setPadding(0, dp(8), 0, dp(3));
+        TextView t =
+                text(
+                        s,
+                        15,
+                        GOLD
+                );
+
+        t.setPadding(
+                0,
+                dp(8),
+                0,
+                dp(3)
+        );
 
         return t;
     }
 
+    // =========================================================
+    // TextView
+    // =========================================================
     private TextView text(
             String value,
             float size,
             int color) {
 
-        TextView t = new TextView(this);
+        TextView t =
+                new TextView(this);
 
         t.setText(value);
         t.setTextSize(size);
         t.setTextColor(color);
-        t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setGravity(
+                Gravity.CENTER_VERTICAL
+        );
 
         return t;
     }
 
-    private EditText input(String hint) {
+    // =========================================================
+    // EditText
+    // =========================================================
+    private EditText input(
+            String hint) {
 
-        EditText e = new EditText(this);
+        EditText e =
+                new EditText(this);
 
         e.setHint(hint);
         e.setTextSize(16);
         e.setTextColor(WHITE);
-        e.setHintTextColor(Color.LTGRAY);
+        e.setHintTextColor(
+                Color.LTGRAY
+        );
+
         e.setPadding(
                 dp(12),
                 dp(8),
@@ -864,19 +1473,26 @@ public class MainActivity extends Activity {
         return e;
     }
 
-    private Spinner spinner(ArrayList<String> values) {
+    // =========================================================
+    // Spinner
+    // =========================================================
+    private Spinner spinner(
+            ArrayList<String> values) {
 
-        Spinner spinner = new Spinner(this);
+        Spinner spinner =
+                new Spinner(this);
 
         ArrayAdapter<String> adapter =
                 new ArrayAdapter<>(
                         this,
-                        android.R.layout.simple_spinner_item,
+                        android.R.layout
+                                .simple_spinner_item,
                         values
                 );
 
         adapter.setDropDownViewResource(
-                android.R.layout.simple_spinner_dropdown_item
+                android.R.layout
+                        .simple_spinner_dropdown_item
         );
 
         spinner.setAdapter(adapter);
@@ -884,6 +1500,9 @@ public class MainActivity extends Activity {
         return spinner;
     }
 
+    // =========================================================
+    // پارامترهای Layout
+    // =========================================================
     private LinearLayout.LayoutParams params(
             int width,
             int height) {
@@ -895,9 +1514,10 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // ابزارهای عددی
+    // اعداد
     // =========================================================
-    private double number(EditText editText) {
+    private double number(
+            EditText editText) {
 
         try {
 
@@ -908,7 +1528,9 @@ public class MainActivity extends Activity {
                             .replace("٬", "")
                             .trim();
 
-            if (s.isEmpty()) return 0;
+            if (s.isEmpty()) {
+                return 0;
+            }
 
             return Double.parseDouble(s);
 
@@ -918,7 +1540,11 @@ public class MainActivity extends Activity {
         }
     }
 
-    private String formatNumber(double n) {
+    // =========================================================
+    // فرمت عدد
+    // =========================================================
+    private String formatNumber(
+            double n) {
 
         if (n == (long) n) {
 
@@ -936,7 +1562,11 @@ public class MainActivity extends Activity {
         );
     }
 
-    private String money(double n) {
+    // =========================================================
+    // پول
+    // =========================================================
+    private String money(
+            double n) {
 
         return String.format(
                 Locale.US,
@@ -945,7 +1575,11 @@ public class MainActivity extends Activity {
         );
     }
 
-    private int dp(int value) {
+    // =========================================================
+    // DP
+    // =========================================================
+    private int dp(
+            int value) {
 
         return (int) (
                 value *
@@ -955,7 +1589,11 @@ public class MainActivity extends Activity {
         );
     }
 
-    private void toast(String message) {
+    // =========================================================
+    // Toast
+    // =========================================================
+    private void toast(
+            String message) {
 
         Toast.makeText(
                 this,
@@ -965,9 +1603,10 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // دیتابیس
+    // DATABASE
     // =========================================================
-    private static class DB extends SQLiteOpenHelper {
+    private static class DB
+            extends SQLiteOpenHelper {
 
         private static final String DB_NAME =
                 "zeriva.db";
@@ -985,8 +1624,12 @@ public class MainActivity extends Activity {
         }
 
         @Override
-        public void onCreate(SQLiteDatabase db) {
+        public void onCreate(
+                SQLiteDatabase db) {
 
+            // -------------------------------------------------
+            // مشتریان
+            // -------------------------------------------------
             db.execSQL(
                     "CREATE TABLE customers (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -994,6 +1637,9 @@ public class MainActivity extends Activity {
                             "phone TEXT)"
             );
 
+            // -------------------------------------------------
+            // معاملات
+            // -------------------------------------------------
             db.execSQL(
                     "CREATE TABLE transactions (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -1003,6 +1649,9 @@ public class MainActivity extends Activity {
                             "payment REAL DEFAULT 0)"
             );
 
+            // -------------------------------------------------
+            // خرید از باغدار
+            // -------------------------------------------------
             db.execSQL(
                     "CREATE TABLE purchases (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -1012,6 +1661,9 @@ public class MainActivity extends Activity {
                             "total REAL)"
             );
 
+            // -------------------------------------------------
+            // سفارش‌های فروش
+            // -------------------------------------------------
             db.execSQL(
                     "CREATE TABLE orders (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -1030,7 +1682,7 @@ public class MainActivity extends Activity {
                 int oldVersion,
                 int newVersion) {
 
-            // فعلاً نیازی به حذف اطلاعات نداریم.
+            // فعلاً اطلاعات قبلی حذف نمی‌شوند.
         }
     }
 }
