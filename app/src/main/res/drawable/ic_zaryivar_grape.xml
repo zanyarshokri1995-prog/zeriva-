@@ -1,0 +1,68 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- برگ -->
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M54,25
+            C62,12 78,11 88,16
+            C82,29 72,36 58,35
+            Z" />
+
+    <!-- ساقه -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M54,25
+            C51,34 52,39 56,44
+            L60,42
+            C56,35 57,29 60,24
+            Z" />
+
+    <!-- خوشه انگور -->
+    <path
+        android:fillColor="#651B32"
+        android:pathData="M51,40
+            A7,7 0,1 0,51.1,40
+            M66,40
+            A7,7 0,1 0,66.1,40
+            M43,51
+            A7,7 0,1 0,43.1,51
+            M57,51
+            A7,7 0,1 0,57.1,51
+            M71,51
+            A7,7 0,1 0,71.1,51
+            M36,63
+            A7,7 0,1 0,36.1,63
+            M50,63
+            A7,7 0,1 0,50.1,63
+            M64,63
+            A7,7 0,1 0,64.1,63
+            M78,63
+            A7,7 0,1 0,78.1,63
+            M43,75
+            A7,7 0,1 0,43.1,75
+            M57,75
+            A7,7 0,1 0,57.1,75
+            M71,75
+            A7,7 0,1 0,71.1,75
+            M50,87
+            A7,7 0,1 0,50.1,87
+            M64,87
+            A7,7 0,1 0,64.1,87" />
+
+    <!-- برق طلایی روی انگورها -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M47,46
+            L50,43
+            L49,48
+            L52,47
+            L48,52
+            L49,48
+            L46,49
+            Z" />
+
+</vector>
