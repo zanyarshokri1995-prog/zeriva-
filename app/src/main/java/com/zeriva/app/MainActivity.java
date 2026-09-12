@@ -42,7 +42,6 @@ public class MainActivity extends Activity {
     private DB db;
 
     private TextView orderPriceView;
-
     private EditText orderKgView;
 
     private Spinner provinceSpinner;
@@ -192,7 +191,7 @@ public class MainActivity extends Activity {
                 )
         );
 
-        main.addView(title("ZERIVA", 42));
+        main.addView(title("زریوار", 42));
 
         TextView subtitle = new TextView(this);
 
@@ -236,7 +235,7 @@ public class MainActivity extends Activity {
 
         LinearLayout l = layout();
 
-        l.addView(title("مشتریان ZERIVA", 30));
+        l.addView(title("مشتریان زریوار", 30));
 
         button(l, "➕ ثبت مشتری جدید", v -> addCustomer());
 
@@ -625,11 +624,9 @@ public class MainActivity extends Activity {
         l.addView(name);
         l.addView(phone);
 
-        // استان
         provinceSpinner =
                 createProvinceSpinner(l);
 
-        // شهر
         citySpinner =
                 createCitySpinner(l);
 
@@ -641,10 +638,6 @@ public class MainActivity extends Activity {
 
         l.addView(address);
         l.addView(grape);
-
-        // =====================================================
-        // وزن با + و -
-        // =====================================================
 
         l.addView(
                 title("وزن سفارش", 21)
@@ -731,7 +724,6 @@ public class MainActivity extends Activity {
                 v -> changeWeight(1)
         );
 
-        // قیمت
         orderPriceView =
                 card(
                         "قیمت روز هر کیلو: " +
@@ -755,10 +747,6 @@ public class MainActivity extends Activity {
 
         l.addView(deposit);
         l.addView(description);
-
-        // =====================================================
-        // عکس / فیلم بار
-        // =====================================================
 
         l.addView(
                 title("رسانه بار", 21)
@@ -1405,7 +1393,7 @@ public class MainActivity extends Activity {
         LinearLayout l = layout();
 
         l.addView(
-                title("سفارش‌های ZERIVA", 30)
+                title("سفارش‌های زریوار", 30)
         );
 
         Cursor c =
@@ -2191,7 +2179,7 @@ public class MainActivity extends Activity {
 
         l.addView(
                 title(
-                        "گزارش‌های ZERIVA",
+                        "گزارش‌های زریوار",
                         30
                 )
         );
@@ -2338,7 +2326,7 @@ public class MainActivity extends Activity {
                 new TextView(this);
 
         supportTitle.setText(
-                "☎ پشتیبانی ZERIVA"
+                "☎ پشتیبانی زریوار"
         );
 
         supportTitle.setTextColor(GOLD);
