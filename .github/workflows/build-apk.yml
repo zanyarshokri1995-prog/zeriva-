@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   build:
+    name: Build and Release ZERIVA APK
     runs-on: ubuntu-latest
 
     steps:
@@ -29,15 +30,23 @@ jobs:
       - name: Build APK
         run: ./gradlew assembleDebug
 
+      - name: Find APK
+        run: |
+          echo "APK files:"
+          find app/build/outputs/apk -type f -name "*.apk"
+
       - name: Rename APK
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk ZERIVA-APK.apk
+          mkdir -p release
+          cp app/build/outputs/apk/debug/app-debug.apk release/ZERIVA-APK.apk
 
       - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG="v1.0.${{ github.run_number }}"
-          gh release create "$TAG" ZERIVA-APK.apk \
-            --title "ZERIVA APK $TAG" \
-            --notes "ZERIVA Android APK - Build ${{ github.run_number }}"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: zeriva-v1.${{ github.run_number }}
+          name: ZERIVA APK v1.${{ github.run_number }}
+          body: |
+            ZERIVA Android APK
+            Build: ${{ github.run_number }}
+          files: release/ZERIVA-APK.apk
+          make_latest: true
