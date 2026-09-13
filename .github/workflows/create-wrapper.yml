@@ -1,0 +1,38 @@
+name: Create Gradle Wrapper
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  wrapper:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Create Gradle Wrapper
+        run: |
+          gradle wrapper --gradle-version 8.9
+
+      - name: Commit Gradle Wrapper
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add gradlew gradlew.bat gradle/wrapper
+          git commit -m "Add Gradle Wrapper" || echo "Nothing to commit"
+          git push
