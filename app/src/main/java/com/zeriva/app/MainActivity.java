@@ -3,12 +3,14 @@ package com.zeriva.app;
 import android.app.Activity;
 import android.os.Bundle;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
@@ -32,6 +34,9 @@ public class MainActivity extends Activity {
 
     private LinearLayout root;
     private DB db;
+
+    // فایل عکس/فیلم انتخاب‌شده برای سفارش
+    private Uri selectedMediaUri = null;
 
     // =========================================================
     // استان‌ها و شهرها
@@ -148,7 +153,7 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // صفحه اصلی جدید
+    // صفحه اصلی
     // =========================================================
     private void showHome() {
 
@@ -164,9 +169,6 @@ public class MainActivity extends Activity {
         content.setGravity(Gravity.CENTER_HORIZONTAL);
         content.setPadding(dp(15), dp(18), dp(15), dp(30));
 
-        // -----------------------------------------------------
-        // نام برند
-        // -----------------------------------------------------
         TextView logo = text("ZERIVA", 34, GOLD);
         logo.setTypeface(Typeface.DEFAULT_BOLD);
         logo.setGravity(Gravity.CENTER);
@@ -184,13 +186,13 @@ public class MainActivity extends Activity {
                 14,
                 LIGHT
         );
-        subtitle.setGravity(Gravity.CENTER);
 
+        subtitle.setGravity(Gravity.CENTER);
         content.addView(subtitle, params(-1, 35));
 
-        // -----------------------------------------------------
+        // =====================================================
         // کارت اطلاعات
-        // -----------------------------------------------------
+        // =====================================================
         LinearLayout infoCard = new LinearLayout(this);
         infoCard.setOrientation(LinearLayout.VERTICAL);
         infoCard.setGravity(Gravity.CENTER);
@@ -201,9 +203,7 @@ public class MainActivity extends Activity {
                 dp(10)
         );
 
-        GradientDrawable infoBackground =
-                new GradientDrawable();
-
+        GradientDrawable infoBackground = new GradientDrawable();
         infoBackground.setColor(GREEN);
         infoBackground.setCornerRadius(dp(18));
         infoBackground.setStroke(dp(1), GOLD);
@@ -244,9 +244,9 @@ public class MainActivity extends Activity {
 
         content.addView(infoCard, infoParams);
 
-        // -----------------------------------------------------
-        // منوهای دایره‌ای
-        // -----------------------------------------------------
+        // =====================================================
+        // ردیف اول منوها
+        // =====================================================
         LinearLayout row1 = new LinearLayout(this);
         row1.setOrientation(LinearLayout.HORIZONTAL);
         row1.setGravity(Gravity.CENTER);
@@ -280,6 +280,9 @@ public class MainActivity extends Activity {
 
         content.addView(row1);
 
+        // =====================================================
+        // ردیف دوم منوها
+        // =====================================================
         LinearLayout row2 = new LinearLayout(this);
         row2.setOrientation(LinearLayout.HORIZONTAL);
         row2.setGravity(Gravity.CENTER);
@@ -302,7 +305,6 @@ public class MainActivity extends Activity {
                 circleParams()
         );
 
-        // دایره ششم برای آینده
         row2.addView(
                 circleMenu(
                         "⚙",
@@ -314,9 +316,9 @@ public class MainActivity extends Activity {
 
         content.addView(row2);
 
-        // -----------------------------------------------------
-        // متن پایین صفحه
-        // -----------------------------------------------------
+        // =====================================================
+        // پایین صفحه
+        // =====================================================
         TextView footer =
                 text(
                         "\nZERIVA\nPremium Shani Grape\nMariwan • Zarivar",
@@ -325,6 +327,7 @@ public class MainActivity extends Activity {
                 );
 
         footer.setGravity(Gravity.CENTER);
+
         content.addView(
                 footer,
                 params(-1, 100)
@@ -344,15 +347,12 @@ public class MainActivity extends Activity {
             String title,
             View.OnClickListener listener) {
 
-        LinearLayout box =
-                new LinearLayout(this);
+        LinearLayout box = new LinearLayout(this);
 
         box.setOrientation(LinearLayout.VERTICAL);
         box.setGravity(Gravity.CENTER);
 
-        // دایره
-        TextView circle =
-                new TextView(this);
+        TextView circle = new TextView(this);
 
         circle.setText(icon);
         circle.setTextSize(27);
@@ -399,6 +399,7 @@ public class MainActivity extends Activity {
 
         box.setOnClickListener(listener);
         circle.setOnClickListener(listener);
+        label.setOnClickListener(listener);
 
         return box;
     }
@@ -423,7 +424,7 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // منوی بیشتر
+    // بیشتر
     // =========================================================
     private void showMore() {
 
@@ -436,6 +437,7 @@ public class MainActivity extends Activity {
         );
 
         info.setGravity(Gravity.CENTER);
+
         info.setPadding(
                 dp(10),
                 dp(20),
@@ -520,6 +522,8 @@ public class MainActivity extends Activity {
         }
 
         c.close();
+
+        addBack(page);
 
         setPage(page);
     }
@@ -647,7 +651,8 @@ public class MainActivity extends Activity {
                                             "VALUES(?,?,?,?)",
                                     new Object[]{
                                             farmer.getText()
-                                                    .toString(),
+                                                    .toString()
+                                                    .trim(),
                                             w,
                                             pr,
                                             total
@@ -673,9 +678,14 @@ public class MainActivity extends Activity {
     // =========================================================
     private void showSales() {
 
+        selectedMediaUri = null;
+
         LinearLayout page =
                 page("فروش و ارسال");
 
+        // -----------------------------------------------------
+        // استان
+        // -----------------------------------------------------
         final Spinner province =
                 spinner(
                         new ArrayList<>(
@@ -683,15 +693,27 @@ public class MainActivity extends Activity {
                         )
                 );
 
+        // -----------------------------------------------------
+        // شهر
+        // -----------------------------------------------------
         final Spinner city =
                 new Spinner(this);
 
+        // -----------------------------------------------------
+        // مشتری
+        // -----------------------------------------------------
         EditText customer =
                 input("نام مشتری");
 
+        // -----------------------------------------------------
+        // وزن
+        // -----------------------------------------------------
         EditText weight =
                 input("وزن سفارش (کیلو)");
 
+        // -----------------------------------------------------
+        // قیمت
+        // -----------------------------------------------------
         EditText price =
                 input("قیمت هر کیلو");
 
@@ -706,16 +728,10 @@ public class MainActivity extends Activity {
                 Gravity.CENTER
         );
 
-        page.addView(
-                label("استان")
-        );
-
+        page.addView(label("استان"));
         page.addView(province);
 
-        page.addView(
-                label("شهر")
-        );
-
+        page.addView(label("شهر"));
         page.addView(city);
 
         if (province.getSelectedItem() != null) {
@@ -754,11 +770,13 @@ public class MainActivity extends Activity {
         );
 
         page.addView(customer);
+
+        page.addView(label("وزن سفارش"));
         page.addView(weight);
 
-        // -----------------------------------------------------
+        // =====================================================
         // کنترل وزن
-        // -----------------------------------------------------
+        // =====================================================
         LinearLayout weightRow =
                 new LinearLayout(this);
 
@@ -775,12 +793,14 @@ public class MainActivity extends Activity {
 
         minus.setText("−");
         minus.setTextSize(22);
+        minus.setAllCaps(false);
 
         Button plus =
                 new Button(this);
 
         plus.setText("+");
         plus.setTextSize(22);
+        plus.setAllCaps(false);
 
         weightRow.addView(
                 minus,
@@ -848,6 +868,79 @@ public class MainActivity extends Activity {
                 }
         );
 
+        // =====================================================
+        // بخش عکس و فیلم بار
+        // =====================================================
+        TextView mediaTitle =
+                text(
+                        "📸 عکس / فیلم بار",
+                        17,
+                        GOLD
+                );
+
+        mediaTitle.setTypeface(
+                Typeface.DEFAULT_BOLD
+        );
+
+        mediaTitle.setPadding(
+                0,
+                dp(15),
+                0,
+                dp(5)
+        );
+
+        page.addView(mediaTitle);
+
+        TextView mediaStatus =
+                text(
+                        "هنوز عکس یا فیلمی انتخاب نشده است.",
+                        14,
+                        LIGHT
+                );
+
+        mediaStatus.setGravity(
+                Gravity.CENTER
+        );
+
+        page.addView(
+                mediaStatus,
+                params(-1, 45)
+        );
+
+        addButton(
+                page,
+                "📷 انتخاب عکس یا فیلم",
+                v -> {
+
+                    Intent intent =
+                            new Intent(
+                                    Intent.ACTION_OPEN_DOCUMENT
+                            );
+
+                    intent.addCategory(
+                            Intent.CATEGORY_OPENABLE
+                    );
+
+                    intent.setType("*/*");
+
+                    intent.putExtra(
+                            Intent.EXTRA_MIME_TYPES,
+                            new String[]{
+                                    "image/*",
+                                    "video/*"
+                            }
+                    );
+
+                    startActivityForResult(
+                            intent,
+                            1001
+                    );
+                }
+        );
+
+        // =====================================================
+        // ثبت سفارش
+        // =====================================================
         addButton(
                 page,
                 "📦 ثبت سفارش",
@@ -882,6 +975,16 @@ public class MainActivity extends Activity {
                         return;
                     }
 
+                    if (province.getSelectedItem() == null ||
+                            city.getSelectedItem() == null) {
+
+                        toast(
+                                "استان و شهر را انتخاب کنید"
+                        );
+
+                        return;
+                    }
+
                     String selectedProvince =
                             province
                                     .getSelectedItem()
@@ -895,18 +998,24 @@ public class MainActivity extends Activity {
                     double total =
                             w * p;
 
+                    String mediaUri =
+                            selectedMediaUri == null
+                                    ? ""
+                                    : selectedMediaUri.toString();
+
                     db.getWritableDatabase()
                             .execSQL(
                                     "INSERT INTO orders(" +
-                                            "customer,province,city,weight,price,total" +
-                                            ") VALUES(?,?,?,?,?,?)",
+                                            "customer,province,city,weight,price,total,media_uri" +
+                                            ") VALUES(?,?,?,?,?,?,?)",
                                     new Object[]{
                                             cust,
                                             selectedProvince,
                                             selectedCity,
                                             w,
                                             p,
-                                            total
+                                            total,
+                                            mediaUri
                                     }
                             );
 
@@ -922,6 +1031,9 @@ public class MainActivity extends Activity {
                 }
         );
 
+        // =====================================================
+        // جمع سفارش شهرها
+        // =====================================================
         addButton(
                 page,
                 "📊 جمع سفارش شهرها",
@@ -931,6 +1043,35 @@ public class MainActivity extends Activity {
         addBack(page);
 
         setPage(page);
+    }
+
+    // =========================================================
+    // دریافت عکس یا فیلم
+    // =========================================================
+    @Override
+    protected void onActivityResult(
+            int requestCode,
+            int resultCode,
+            Intent data) {
+
+        super.onActivityResult(
+                requestCode,
+                resultCode,
+                data
+        );
+
+        if (requestCode == 1001 &&
+                resultCode == RESULT_OK &&
+                data != null &&
+                data.getData() != null) {
+
+            selectedMediaUri =
+                    data.getData();
+
+            toast(
+                    "عکس یا فیلم انتخاب شد"
+            );
+        }
     }
 
     // =========================================================
@@ -1165,9 +1306,11 @@ public class MainActivity extends Activity {
                                             ") VALUES(?,?,?,?)",
                                     new Object[]{
                                             person.getText()
-                                                    .toString(),
+                                                    .toString()
+                                                    .trim(),
                                             description.getText()
-                                                    .toString(),
+                                                    .toString()
+                                                    .trim(),
                                             number(debt),
                                             number(payment)
                                     }
@@ -1273,13 +1416,22 @@ public class MainActivity extends Activity {
 
         purchases.close();
 
+        // =====================================================
+        // گزارش شهرها
+        // =====================================================
+        addButton(
+                page,
+                "🏙 گزارش سفارش هر شهر",
+                v -> showCityOrders()
+        );
+
         addBack(page);
 
         setPage(page);
     }
 
     // =========================================================
-    // ابزار صفحه
+    // صفحه
     // =========================================================
     private LinearLayout page(
             String title) {
@@ -1325,6 +1477,9 @@ public class MainActivity extends Activity {
         return layout;
     }
 
+    // =========================================================
+    // نمایش صفحه
+    // =========================================================
     private void setPage(
             LinearLayout page) {
 
@@ -1352,7 +1507,7 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // دکمه معمولی
+    // دکمه
     // =========================================================
     private void addButton(
             LinearLayout layout,
@@ -1368,6 +1523,7 @@ public class MainActivity extends Activity {
         button.setTypeface(
                 Typeface.DEFAULT_BOLD
         );
+
         button.setAllCaps(false);
         button.setBackgroundColor(GREEN);
         button.setOnClickListener(listener);
@@ -1425,6 +1581,7 @@ public class MainActivity extends Activity {
         t.setText(value);
         t.setTextSize(size);
         t.setTextColor(color);
+
         t.setGravity(
                 Gravity.CENTER_VERTICAL
         );
@@ -1501,7 +1658,7 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // پارامترهای Layout
+    // Layout Params
     // =========================================================
     private LinearLayout.LayoutParams params(
             int width,
@@ -1514,7 +1671,7 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // اعداد
+    // تبدیل عدد
     // =========================================================
     private double number(
             EditText editText) {
@@ -1531,6 +1688,19 @@ public class MainActivity extends Activity {
             if (s.isEmpty()) {
                 return 0;
             }
+
+            // اعداد فارسی
+            s = s
+                    .replace("۰", "0")
+                    .replace("۱", "1")
+                    .replace("۲", "2")
+                    .replace("۳", "3")
+                    .replace("۴", "4")
+                    .replace("۵", "5")
+                    .replace("۶", "6")
+                    .replace("۷", "7")
+                    .replace("۸", "8")
+                    .replace("۹", "9");
 
             return Double.parseDouble(s);
 
@@ -1611,7 +1781,7 @@ public class MainActivity extends Activity {
         private static final String DB_NAME =
                 "zeriva.db";
 
-        private static final int VERSION = 1;
+        private static final int VERSION = 2;
 
         DB(Context context) {
 
@@ -1627,9 +1797,9 @@ public class MainActivity extends Activity {
         public void onCreate(
                 SQLiteDatabase db) {
 
-            // -------------------------------------------------
+            // =================================================
             // مشتریان
-            // -------------------------------------------------
+            // =================================================
             db.execSQL(
                     "CREATE TABLE customers (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -1637,9 +1807,9 @@ public class MainActivity extends Activity {
                             "phone TEXT)"
             );
 
-            // -------------------------------------------------
+            // =================================================
             // معاملات
-            // -------------------------------------------------
+            // =================================================
             db.execSQL(
                     "CREATE TABLE transactions (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -1649,9 +1819,9 @@ public class MainActivity extends Activity {
                             "payment REAL DEFAULT 0)"
             );
 
-            // -------------------------------------------------
+            // =================================================
             // خرید از باغدار
-            // -------------------------------------------------
+            // =================================================
             db.execSQL(
                     "CREATE TABLE purchases (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -1661,9 +1831,9 @@ public class MainActivity extends Activity {
                             "total REAL)"
             );
 
-            // -------------------------------------------------
+            // =================================================
             // سفارش‌های فروش
-            // -------------------------------------------------
+            // =================================================
             db.execSQL(
                     "CREATE TABLE orders (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -1672,7 +1842,8 @@ public class MainActivity extends Activity {
                             "city TEXT," +
                             "weight REAL," +
                             "price REAL," +
-                            "total REAL)"
+                            "total REAL," +
+                            "media_uri TEXT DEFAULT '')"
             );
         }
 
@@ -1682,7 +1853,23 @@ public class MainActivity extends Activity {
                 int oldVersion,
                 int newVersion) {
 
-            // فعلاً اطلاعات قبلی حذف نمی‌شوند.
+            // -------------------------------------------------
+            // نسخه قبلی دیتابیس را نگه می‌داریم
+            // و فقط ستون جدید را اضافه می‌کنیم.
+            // -------------------------------------------------
+
+            if (oldVersion < 2) {
+
+                try {
+
+                    db.execSQL(
+                            "ALTER TABLE orders " +
+                                    "ADD COLUMN media_uri TEXT DEFAULT ''"
+                    );
+
+                } catch (Exception ignored) {
+                }
+            }
         }
     }
-}
+                             }
