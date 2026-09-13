@@ -1,4 +1,4 @@
-name: Create Gradle Wrapper
+Create: Create Gradle Wrapper
 
 on:
   workflow_dispatch:
