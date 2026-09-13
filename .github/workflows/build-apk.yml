@@ -26,8 +26,15 @@ jobs:
       - name: ساخت APK
         run: gradle assembleDebug
 
+      - name: بررسی APK
+        run: |
+          echo "بررسی فایل APK..."
+          ls -lh app/build/outputs/apk/debug/
+          file app/build/outputs/apk/debug/app-debug.apk
+
       - name: ذخیره APK
         uses: actions/upload-artifact@v4
         with:
           name: ZERIVA-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
