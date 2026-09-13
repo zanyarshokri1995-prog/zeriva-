@@ -2,39 +2,42 @@ name: Build ZERIVA APK
 
 on:
   push:
+    branches:
+      - main
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: دریافت پروژه
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: نصب Java 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: نصب Gradle 8.7
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-version: '8.7'
+      - name: Make gradlew executable
+        run: chmod +x gradlew
 
-      - name: ساخت APK
-        run: gradle assembleDebug
+      - name: Build APK
+        run: ./gradlew assembleDebug
 
-      - name: بررسی APK
+      - name: Rename APK
         run: |
-          echo "بررسی فایل APK..."
-          ls -lh app/build/outputs/apk/debug/
-          file app/build/outputs/apk/debug/app-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ZERIVA-APK.apk
 
-      - name: ذخیره APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: ZERIVA-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v1.0.${{ github.run_number }}"
+          gh release create "$TAG" ZERIVA-APK.apk \
+            --title "ZERIVA APK $TAG" \
+            --notes "ZERIVA Android APK - Build ${{ github.run_number }}"
