@@ -4663,8 +4663,6 @@ public class MainActivity extends Activity {
                                                     db.getWritableDatabase()
                                                             .update(
                                                                     "orders",
-                                                                                                                         .update(
-                                                                    "orders",
                                                                     cv,
                                                                     "id=?",
                                                                     new String[]{
