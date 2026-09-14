@@ -1,5 +1,3 @@
-Create: Create Gradle Wrapper
-
 on:
   workflow_dispatch:
 
