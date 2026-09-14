@@ -3418,7 +3418,6 @@ public class MainActivity extends Activity {
         space(content, 8);
 
         Cursor cities =
-             Cursor cities =
                 database.rawQuery(
                         "SELECT city,COUNT(*)," +
                         "COALESCE(SUM(weight),0)," +
