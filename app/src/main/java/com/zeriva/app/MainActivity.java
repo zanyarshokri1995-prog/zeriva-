@@ -2419,7 +2419,6 @@ public class MainActivity extends Activity {
                         firstCities
                 )
         );   
-            );
 
         content.addView(
                 citySpinner,
