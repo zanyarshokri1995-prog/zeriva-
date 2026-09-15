@@ -403,8 +403,9 @@ public class MainActivity extends Activity {
                         "بافق",
                         "مهریز"
                 });
-        }
-        // =========================================================
+    }
+
+    // =========================================================
     // ADD STORY
     // =========================================================
 
@@ -635,11 +636,6 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // END PART 1
-    // =========================================================
-
-
-    // =========================================================
     // CUSTOMERS
     // =========================================================
 
@@ -650,23 +646,24 @@ public class MainActivity extends Activity {
 
         Button add =
                 addButton(
-                        "➕ افزودن مشتری جدید",
+                        "➕ افزودن مشتری",
                         v -> addCustomer()
                 );
 
         content.addView(add);
 
-        space(content, 12);
+        space(content, 10);
 
         SQLiteDatabase database =
                 db.getReadableDatabase();
 
-        Cursor c = database.rawQuery(
-                "SELECT id,name,phone " +
-                "FROM customers " +
-                "ORDER BY id DESC",
-                null
-        );
+        Cursor c =
+                database.rawQuery(
+                        "SELECT id,name,phone,province,city,address " +
+                        "FROM customers " +
+                        "ORDER BY id DESC",
+                        null
+                );
 
         if (c.getCount() == 0) {
 
@@ -678,11 +675,16 @@ public class MainActivity extends Activity {
                             Typeface.NORMAL
                     )
             );
+
+            c.close();
+
+            return;
         }
 
         while (c.moveToNext()) {
 
-            int id = c.getInt(0);
+            final long customerId =
+                    c.getLong(0);
 
             String name =
                     safe(c.getString(1));
@@ -690,9 +692,18 @@ public class MainActivity extends Activity {
             String phone =
                     safe(c.getString(2));
 
+            String province =
+                    safe(c.getString(3));
+
+            String city =
+                    safe(c.getString(4));
+
+            String address =
+                    safe(c.getString(5));
+
             LinearLayout card =
                     rounded(
-                            Color.rgb(12, 69, 48),
+                            WHITE,
                             GOLD,
                             1,
                             14
@@ -705,17 +716,109 @@ public class MainActivity extends Activity {
                     dp(10)
             );
 
-            TextView info =
+            card.addView(
                     text(
-                            "👤 " + name +
-                            "\n📞 " + phone +
-                            "\n🔢 شماره مشتری: " + id,
-                            15,
-                            WHITE,
+                            "👤 " + name,
+                            16,
+                            DARK_GREEN,
+                            Typeface.BOLD
+                    )
+            );
+
+            card.addView(
+                    text(
+                            "📞 " + phone,
+                            14,
+                            DARK_GREEN,
                             Typeface.NORMAL
+                    )
+            );
+
+            card.addView(
+                    text(
+                            "📍 " + province +
+                            " - " + city,
+                            14,
+                            DARK_GREEN,
+                            Typeface.NORMAL
+                    )
+            );
+
+            if (!address.isEmpty()) {
+
+                card.addView(
+                        text(
+                                "🏠 " + address,
+                                14,
+                                DARK_GREEN,
+                                Typeface.NORMAL
+                        )
+                );
+            }
+
+            space(card, 6);
+
+            Button orders =
+                    addButton(
+                            "📦 سفارش‌های مشتری",
+                            v -> showOrdersForCustomer(
+                                    customerId
+                            )
                     );
 
-            card.addView(info);
+            card.addView(orders);
+
+            Button edit =
+                    addButton(
+                            "✏️ ویرایش",
+                            v -> editCustomer(
+                                    customerId
+                            )
+                    );
+
+            card.addView(edit);
+
+            Button delete =
+                    addButton(
+                            "🗑️ حذف مشتری",
+                            v -> {
+
+                                new AlertDialog.Builder(
+                                        this
+                                )
+                                        .setTitle(
+                                                "حذف مشتری"
+                                        )
+                                        .setMessage(
+                                                "آیا از حذف این مشتری مطمئن هستید؟"
+                                        )
+                                        .setPositiveButton(
+                                                "بله",
+                                                (dialog, which) -> {
+
+                                                    db.getWritableDatabase()
+                                                            .delete(
+                                                                    "customers",
+                                                                    "id=?",
+                                                                    new String[]{
+                                                                            String.valueOf(
+                                                                                    customerId
+                                                                            )
+                                                                    }
+                                                            );
+
+                                                    showCustomers();
+                                                }
+                                        )
+                                        .setNegativeButton(
+                                                "خیر",
+                                                null
+                                        )
+                                        .show();
+                            }
+                    );
+
+            card.addView(delete);
 
             content.addView(
                     card,
@@ -725,7 +828,7 @@ public class MainActivity extends Activity {
                     )
             );
 
-            space(content, 8);
+            space(content, 10);
         }
 
         c.close();
@@ -746,17 +849,166 @@ public class MainActivity extends Activity {
         EditText phone =
                 input("شماره تماس");
 
+        Spinner provinceSpinner =
+                new Spinner(this);
+
+        ArrayList<String> provinceList =
+                new ArrayList<>(
+                        provinces.keySet()
+                );
+
+        provinceList.sort(
+                String::compareTo
+        );
+
+        provinceList.add(
+                0,
+                "استان را انتخاب کنید"
+        );
+
+        provinceSpinner.setAdapter(
+                createSpinnerAdapter(
+                        provinceList
+                )
+        );
+
+        Spinner citySpinner =
+                new Spinner(this);
+
+        citySpinner.setAdapter(
+                createSpinnerAdapter(
+                        new String[]{
+                                "ابتدا استان را انتخاب کنید"
+                        }
+                )
+        );
+
+        provinceSpinner.setOnItemSelectedListener(
+                new AdapterView.OnItemSelectedListener() {
+
+                    @Override
+                    public void onItemSelected(
+                            AdapterView<?> parent,
+                            View view,
+                            int position,
+                            long id
+                    ) {
+
+                        if (position <= 0) {
+
+                            citySpinner.setAdapter(
+                                    createSpinnerAdapter(
+                                            new String[]{
+                                                    "ابتدا استان را انتخاب کنید"
+                                            }
+                                    )
+                            );
+
+                            return;
+                        }
+
+                        String selectedProvince =
+                                provinceList.get(
+                                        position
+                                );
+
+                        String[] cities =
+                                provinces.get(
+                                        selectedProvince
+                                );
+
+                        if (cities == null) {
+
+                            cities =
+                                    new String[]{
+                                            "شهری موجود نیست"
+                                    };
+                        }
+
+                        citySpinner.setAdapter(
+                                createSpinnerAdapter(
+                                        cities
+                                )
+                        );
+                    }
+
+                    @Override
+                    public void onNothingSelected(
+                            AdapterView<?> parent
+                    ) {
+                    }
+                }
+        );
+
+        EditText address =
+                input("آدرس");
+
         content.addView(
-                label("نام مشتری")
+                text(
+                        "نام مشتری",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
         );
 
         content.addView(name);
 
+        space(content, 6);
+
         content.addView(
-                label("شماره تماس")
+                text(
+                        "شماره تماس",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
         );
 
         content.addView(phone);
+
+        space(content, 6);
+
+        content.addView(
+                text(
+                        "استان",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
+        );
+
+        content.addView(
+                provinceSpinner
+        );
+
+        space(content, 6);
+
+        content.addView(
+                text(
+                        "شهر",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
+        );
+
+        content.addView(
+                citySpinner
+        );
+
+        space(content, 6);
+
+        content.addView(
+                text(
+                        "آدرس",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
+        );
+
+        content.addView(address);
 
         space(content, 12);
 
@@ -765,23 +1017,78 @@ public class MainActivity extends Activity {
                         "💾 ذخیره مشتری",
                         v -> {
 
-                            String n =
-                                    name.getText()
-                                            .toString()
-                                            .trim();
+                            String nameValue =
+                                    cleanText(
+                                            name.getText()
+                                                    .toString()
+                                    );
 
-                            String p =
-                                    phone.getText()
-                                            .toString()
-                                            .trim();
+                            String phoneValue =
+                                    cleanText(
+                                            phone.getText()
+                                                    .toString()
+                                    );
 
-                            if (n.isEmpty()) {
+                            String provinceValue =
+                                    provinceSpinner
+                                            .getSelectedItem()
+                                            .toString();
 
-                                Toast.makeText(
-                                        this,
-                                        "نام مشتری را وارد کنید.",
-                                        Toast.LENGTH_SHORT
-                                ).show();
+                            String cityValue =
+                                    citySpinner
+                                            .getSelectedItem()
+                                            .toString();
+
+                            String addressValue =
+                                    cleanText(
+                                            address.getText()
+                                                    .toString()
+                                    );
+
+                            if (nameValue.isEmpty()) {
+
+                                showToast(
+                                        "نام مشتری را وارد کنید."
+                                );
+
+                                return;
+                            }
+
+                            if (phoneValue.isEmpty()) {
+
+                                showToast(
+                                        "شماره تماس را وارد کنید."
+                                );
+
+                                return;
+                            }
+
+                            if (
+                                    provinceValue.equals(
+                                            "استان را انتخاب کنید"
+                                    )
+                            ) {
+
+                                showToast(
+                                        "استان را انتخاب کنید."
+                                );
+
+                                return;
+                            }
+
+                            if (
+                                    cityValue.equals(
+                                            "ابتدا استان را انتخاب کنید"
+                                    )
+                                    ||
+                                    cityValue.equals(
+                                            "شهری موجود نیست"
+                                    )
+                            ) {
+
+                                showToast(
+                                        "شهر را انتخاب کنید."
+                                );
 
                                 return;
                             }
@@ -791,15 +1098,30 @@ public class MainActivity extends Activity {
 
                             values.put(
                                     "name",
-                                    n
+                                    nameValue
                             );
 
                             values.put(
                                     "phone",
-                                    p
+                                    phoneValue
                             );
 
-                            long id =
+                            values.put(
+                                    "province",
+                                    provinceValue
+                            );
+
+                            values.put(
+                                    "city",
+                                    cityValue
+                            );
+
+                            values.put(
+                                    "address",
+                                    addressValue
+                            );
+
+                            long result =
                                     db.getWritableDatabase()
                                             .insert(
                                                     "customers",
@@ -807,24 +1129,20 @@ public class MainActivity extends Activity {
                                                     values
                                             );
 
-                            if (id == -1) {
+                            if (result == -1) {
 
-                                Toast.makeText(
-                                        this,
-                                        "ذخیره مشتری انجام نشد.",
-                                        Toast.LENGTH_SHORT
-                                ).show();
+                                showToast(
+                                        "ذخیره مشتری انجام نشد."
+                                );
 
-                            } else {
-
-                                Toast.makeText(
-                                        this,
-                                        "مشتری با موفقیت ذخیره شد.",
-                                        Toast.LENGTH_SHORT
-                                ).show();
-
-                                showCustomers();
+                                return;
                             }
+
+                            showToast(
+                                    "مشتری با موفقیت ثبت شد."
+                            );
+
+                            showCustomers();
                         }
                 );
 
@@ -832,7 +1150,388 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // FARMER PURCHASE
+    // EDIT CUSTOMER
+    // =========================================================
+
+    private void editCustomer(
+            long customerId
+    ) {
+
+        Cursor cursor =
+                db.getReadableDatabase()
+                        .rawQuery(
+                                "SELECT name,phone,province,city,address " +
+                                "FROM customers WHERE id=?",
+                                new String[]{
+                                        String.valueOf(
+                                                customerId
+                                        )
+                                }
+                        );
+
+        if (!cursor.moveToFirst()) {
+
+            cursor.close();
+
+            showToast(
+                    "مشتری پیدا نشد."
+            );
+
+            return;
+        }
+
+        String oldName =
+                safe(
+                        cursor.getString(0)
+                );
+
+        String oldPhone =
+                safe(
+                        cursor.getString(1)
+                );
+
+        String oldProvince =
+                safe(
+                        cursor.getString(2)
+                );
+
+        String oldCity =
+                safe(
+                        cursor.getString(3)
+                );
+
+        String oldAddress =
+                safe(
+                        cursor.getString(4)
+                );
+
+        cursor.close();
+
+        LinearLayout content =
+                page("ویرایش مشتری");
+
+        EditText name =
+                input(
+                        "نام مشتری",
+                        oldName
+                );
+
+        EditText phone =
+                input(
+                        "شماره تماس",
+                        oldPhone
+                );
+
+        EditText address =
+                input(
+                        "آدرس",
+                        oldAddress
+                );
+
+        content.addView(
+                text(
+                        "نام مشتری",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
+        );
+
+        content.addView(name);
+
+        space(content, 6);
+
+        content.addView(
+                text(
+                        "شماره تماس",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
+        );
+
+        content.addView(phone);
+
+        space(content, 6);
+
+        content.addView(
+                text(
+                        "استان",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
+        );
+
+        content.addView(
+                text(
+                        oldProvince,
+                        14,
+                        LIGHT_GOLD,
+                        Typeface.BOLD
+                )
+        );
+
+        space(content, 6);
+
+        content.addView(
+                text(
+                        "شهر",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
+        );
+
+        content.addView(
+                text(
+                        oldCity,
+                        14,
+                        LIGHT_GOLD,
+                        Typeface.BOLD
+                )
+        );
+
+        space(content, 6);
+
+        content.addView(
+                text(
+                        "آدرس",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
+        );
+
+        content.addView(address);
+
+        space(content, 12);
+
+        Button save =
+                addButton(
+                        "💾 ذخیره تغییرات",
+                        v -> {
+
+                            String nameValue =
+                                    cleanText(
+                                            name.getText()
+                                                    .toString()
+                                    );
+
+                            String phoneValue =
+                                    cleanText(
+                                            phone.getText()
+                                                    .toString()
+                                    );
+
+                            String addressValue =
+                                    cleanText(
+                                            address.getText()
+                                                    .toString()
+                                    );
+
+                            if (nameValue.isEmpty()) {
+
+                                showToast(
+                                        "نام مشتری را وارد کنید."
+                                );
+
+                                return;
+                            }
+
+                            ContentValues values =
+                                    new ContentValues();
+
+                            values.put(
+                                    "name",
+                                    nameValue
+                            );
+
+                            values.put(
+                                    "phone",
+                                    phoneValue
+                            );
+
+                            values.put(
+                                    "address",
+                                    addressValue
+                            );
+
+                            int result =
+                                    db.getWritableDatabase()
+                                            .update(
+                                                    "customers",
+                                                    values,
+                                                    "id=?",
+                                                    new String[]{
+                                                            String.valueOf(
+                                                                    customerId
+                                                            )
+                                                    }
+                                            );
+
+                            if (result <= 0) {
+
+                                showToast(
+                                        "تغییرات ذخیره نشد."
+                                );
+
+                                return;
+                            }
+
+                            showToast(
+                                    "اطلاعات مشتری ویرایش شد."
+                            );
+
+                            showCustomers();
+                        }
+                );
+
+        content.addView(save);
+    }
+
+    // =========================================================
+    // SHOW ORDERS FOR CUSTOMER
+    // =========================================================
+
+    private void showOrdersForCustomer(
+            long customerId
+    ) {
+
+        LinearLayout content =
+                page("سفارش‌های مشتری");
+
+        Cursor cursor =
+                db.getReadableDatabase()
+                        .rawQuery(
+                                "SELECT id,weight,total,status,order_date " +
+                                "FROM orders WHERE customer_id=? " +
+                                "ORDER BY id DESC",
+                                new String[]{
+                                        String.valueOf(
+                                                customerId
+                                        )
+                                }
+                        );
+
+        if (cursor.getCount() == 0) {
+
+            content.addView(
+                    text(
+                            "برای این مشتری سفارشی ثبت نشده است.",
+                            15,
+                            WHITE,
+                            Typeface.NORMAL
+                    )
+            );
+
+            cursor.close();
+
+            return;
+        }
+
+        while (cursor.moveToNext()) {
+
+            long id =
+                    cursor.getLong(0);
+
+            double weight =
+                    cursor.getDouble(1);
+
+            double total =
+                    cursor.getDouble(2);
+
+            String status =
+                    safe(
+                            cursor.getString(3)
+                    );
+
+            String orderDate =
+                    safe(
+                            cursor.getString(4)
+                    );
+
+            LinearLayout card =
+                    rounded(
+                            WHITE,
+                            GOLD,
+                            1,
+                            14
+                    );
+
+            card.setPadding(
+                    dp(12),
+                    dp(10),
+                    dp(12),
+                    dp(10)
+            );
+
+            card.addView(
+                    text(
+                            "📦 سفارش #" + id,
+                            16,
+                            DARK_GREEN,
+                            Typeface.BOLD
+                    )
+            );
+
+            card.addView(
+                    text(
+                            "وزن: " +
+                            formatNumber(weight) +
+                            " کیلو",
+                            14,
+                            DARK_GREEN,
+                            Typeface.NORMAL
+                    )
+            );
+
+            card.addView(
+                    text(
+                            "مبلغ: " +
+                            money(total),
+                            14,
+                            DARK_GREEN,
+                            Typeface.NORMAL
+                    )
+            );
+
+            card.addView(
+                    text(
+                            "وضعیت: " +
+                            status,
+                            14,
+                            DARK_GREEN,
+                            Typeface.NORMAL
+                    )
+            );
+
+            card.addView(
+                    text(
+                            "تاریخ سفارش: " +
+                            orderDate,
+                            14,
+                            DARK_GREEN,
+                            Typeface.NORMAL
+                    )
+            );
+
+            content.addView(
+                    card,
+                    new LinearLayout.LayoutParams(
+                            -1,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+            );
+
+            space(content, 10);
+        }
+
+        cursor.close();
+    }
+
+    // =========================================================
+    // BUY FROM FARMER
     // =========================================================
 
     private void showBuyFromFarmer() {
@@ -840,240 +1539,483 @@ public class MainActivity extends Activity {
         LinearLayout content =
                 page("خرید از باغدار");
 
-        TextView title =
-                text(
-                        "👨‍🌾 ثبت خرید جدید از باغدار",
-                        20,
-                        GOLD,
-                        Typeface.BOLD
+        Button add =
+                addButton(
+                        "➕ ثبت خرید جدید از باغدار",
+                        v -> addFarmerPurchase()
                 );
 
-        content.addView(title);
+        content.addView(add);
 
-        space(content, 10);
+        space(content, 8);
 
-        // -----------------------------------------------------
-        // FARMER NAME
-        // -----------------------------------------------------
+        Button unsettled =
+                addButton(
+                        "💰 خریدهای تسویه‌نشده",
+                        v -> showUnsettledPurchases()
+                );
 
-        content.addView(
-                label("نام باغدار")
-        );
+        content.addView(unsettled);
+
+        space(content, 8);
+
+        Button settled =
+                addButton(
+                        "✅ خریدهای تسویه‌شده",
+                        v -> showSettledPurchases()
+                );
+
+        content.addView(settled);
+
+        space(content, 8);
+
+        Button files =
+                addButton(
+                        "📁 پرونده باغدارها",
+                        v -> showFarmerFiles()
+                );
+
+        content.addView(files);
+
+        space(content, 8);
+
+        Button history =
+                addButton(
+                        "📜 تاریخچه خرید باغدار",
+                        v -> showFarmerHistory()
+                );
+
+        content.addView(history);
+
+        addContactFooter(content);
+    }
+
+    // =========================================================
+    // ADD FARMER PURCHASE
+    // =========================================================
+
+    private void addFarmerPurchase() {
+
+        LinearLayout content =
+                page("ثبت خرید از باغدار");
 
         EditText farmer =
-                input("مثلاً: احمد محمدی");
+                input("نام باغدار");
+
+        EditText phone =
+                input("شماره تماس باغدار");
+
+        EditText boxes =
+                input("تعداد جعبه");
+
+        EditText weight =
+                input("وزن کل به کیلو");
+
+        EditText price =
+                input("قیمت خرید هر کیلو");
+
+        EditText description =
+                input("توضیحات باغدار");
+
+        content.addView(
+                text(
+                        "نام باغدار",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
+        );
 
         content.addView(farmer);
 
-        // -----------------------------------------------------
-        // BOX COUNT
-        // -----------------------------------------------------
+        space(content, 6);
 
         content.addView(
-                label("تعداد جعبه")
+                text(
+                        "شماره تماس",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
         );
 
-        EditText boxes =
-                input("مثلاً: 200");
+        content.addView(phone);
 
-        boxes.setInputType(
-                android.text.InputType.TYPE_CLASS_NUMBER
+        space(content, 6);
+
+        content.addView(
+                text(
+                        "تعداد جعبه",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
         );
 
         content.addView(boxes);
 
-        // -----------------------------------------------------
-        // WEIGHT
-        // -----------------------------------------------------
+        space(content, 6);
 
         content.addView(
-                label("وزن کل (کیلوگرم)")
-        );
-
-        EditText weight =
-                input("مثلاً: 3000");
-
-        weight.setInputType(
-                android.text.InputType.TYPE_CLASS_NUMBER |
-                android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                text(
+                        "وزن کل",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
         );
 
         content.addView(weight);
 
-        // -----------------------------------------------------
-        // PRICE
-        // -----------------------------------------------------
+        space(content, 6);
 
         content.addView(
-                label("قیمت خرید هر کیلو (تومان)")
-        );
-
-        EditText price =
-                input("مثلاً: 70000");
-
-        price.setInputType(
-                android.text.InputType.TYPE_CLASS_NUMBER |
-                android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                text(
+                        "قیمت خرید هر کیلو",
+                        14,
+                        WHITE,
+                        Typeface.BOLD
+                )
         );
 
         content.addView(price);
 
-        // -----------------------------------------------------
-        // TOTAL
-        // -----------------------------------------------------
+        space(content, 6);
 
         content.addView(
-                label("مبلغ کل خرید")
-        );
-
-        TextView total =
                 text(
-                        "0 تومان",
-                        20,
-                        GOLD,
+                        "توضیحات",
+                        14,
+                        WHITE,
                         Typeface.BOLD
-                );
-
-        total.setGravity(Gravity.CENTER);
-
-        GradientDrawable totalBg =
-                new GradientDrawable();
-
-        totalBg.setColor(
-                Color.rgb(12, 69, 48)
-        );
-
-        totalBg.setCornerRadius(
-                dp(12)
-        );
-
-        totalBg.setStroke(
-                dp(1),
-                GOLD
-        );
-
-        total.setBackground(totalBg);
-
-        total.setPadding(
-                dp(10),
-                dp(14),
-                dp(10),
-                dp(14)
-        );
-
-        content.addView(
-                total,
-                new LinearLayout.LayoutParams(
-                        -1,
-                        dp(60)
                 )
-        );
-
-        // -----------------------------------------------------
-        // DATE
-        // -----------------------------------------------------
-
-        content.addView(
-                label("تاریخ خرید")
-        );
-
-        EditText purchaseDate =
-                input("تاریخ شمسی");
-
-        purchaseDate.setText(
-                today()
-        );
-
-        content.addView(purchaseDate);
-
-        // -----------------------------------------------------
-        // DESCRIPTION
-        // -----------------------------------------------------
-
-        content.addView(
-                label("شرح / توضیحات")
-        );
-
-        EditText description =
-                input(
-                        "مثلاً کیفیت انگور، نوع بار، توضیحات حمل..."
-                );
-
-        description.setMinLines(3);
-
-        description.setGravity(
-                Gravity.TOP
         );
 
         content.addView(description);
 
-        // -----------------------------------------------------
-        // AUTO CALCULATE
-        // -----------------------------------------------------
-
-        android.text.TextWatcher watcher =
-                new android.text.TextWatcher() {
-
-                    @Override
-                    public void beforeTextChanged(
-                            CharSequence s,
-                            int start,
-                            int count,
-                            int after
-                    ) {
-                    }
-
-                    @Override
-                    public void onTextChanged(
-                            CharSequence s,
-                            int start,
-                            int before,
-                            int count
-                    ) {
-
-                        double w =
-                                parseDouble(
-                                        weight.getText()
-                                                .toString()
-                                );
-
-                        double p =
-                                parseDouble(
-                                        price.getText()
-                                                .toString()
-                                );
-
-                        double amount =
-                                w * p;
-
-                        total.setText(
-                                money(amount) +
-                                " تومان"
-                        );
-                    }
-
-                    @Override
-                    public void afterTextChanged(
-                            android.text.Editable s
-                    ) {
-                    }
-                };
-
-        weight.addTextChangedListener(watcher);
-        price.addTextChangedListener(watcher);
-
         space(content, 12);
-
-        // -----------------------------------------------------
-        // SAVE PURCHASE
-        // -----------------------------------------------------
 
         Button save =
                 addButton(
-                        "💾 ثبت خرید باغدار",
+                        "💾 ثبت خرید",
                         v -> {
 
                             String farmerName =
+                                    cleanText(
+                                            farmer.getText()
+                                                    .toString()
+                                    );
+
+                            String phoneValue =
+                                    cleanText(
+                                            phone.getText()
+                                                    .toString()
+                                    );
+
+                            int boxCount =
+                                    parseInt(
+                                            boxes.getText()
+                                                    .toString()
+                                    );
+
+                            double weightValue =
+                                    parseDouble(
+                                            weight.getText()
+                                                    .toString()
+                                    );
+
+                            double priceValue =
+                                    parseDouble(
+                                            price.getText()
+                                                    .toString()
+                                    );
+
+                            String descriptionValue =
+                                    cleanText(
+                                            description.getText()
+                                                    .toString()
+                                    );
+
+                            if (farmerName.isEmpty()) {
+
+                                showToast(
+                                        "نام باغدار را وارد کنید."
+                                );
+
+                                return;
+                            }
+
+                            if (weightValue <= 0) {
+
+                                showToast(
+                                        "وزن خرید باید بیشتر از صفر باشد."
+                                );
+
+                                return;
+                            }
+
+                            if (priceValue <= 0) {
+
+                                showToast(
+                                        "قیمت خرید را وارد کنید."
+                                );
+
+                                return;
+                            }
+
+                            double total =
+                                    weightValue *
+                                    priceValue;
+
+                            ContentValues values =
+                                    new ContentValues();
+
+                            values.put(
+                                    "farmer_name",
+                                    farmerName
+                            );
+
+                            values.put(
+                                    "phone",
+                                    phoneValue
+                            );
+
+                            values.put(
+                                    "boxes",
+                                    boxCount
+                            );
+
+                            values.put(
+                                    "weight",
+                                    weightValue
+                            );
+
+                            values.put(
+                                    "price",
+                                    priceValue
+                            );
+
+                            values.put(
+                                    "total",
+                                    total
+                            );
+
+                            values.put(
+                                    "description",
+                                    descriptionValue
+                            );
+
+                            values.put(
+                                    "date",
+                                    today()
+                            );
+
+                            values.put(
+                                    "settled",
+                                    0
+                            );
+
+                            long result =
+                                    db.getWritableDatabase()
+                                            .insert(
+                                                    "farmer_purchases",
+                                                    null,
+                                                    values
+                                            );
+
+                            if (result == -1) {
+
+                                showToast(
+                                        "ثبت خرید انجام نشد."
+                                );
+
+                                return;
+                            }
+
+                            showToast(
+                                    "خرید باغدار با موفقیت ثبت شد."
+                            );
+
+                            showBuyFromFarmer();
+                        }
+                );
+
+        content.addView(save);
+    }
+
+    // =========================================================
+    // UNSETTLED PURCHASES
+    // =========================================================
+
+    private void showUnsettledPurchases() {
+
+        LinearLayout content =
+                page("خریدهای تسویه‌نشده");
+
+        Cursor cursor =
+                db.getReadableDatabase()
+                        .rawQuery(
+                                "SELECT id,farmer_name,boxes,weight,price,total,date,description " +
+                                "FROM farmer_purchases " +
+                                "WHERE settled=0 " +
+                                "ORDER BY id DESC",
+                                null
+                        );
+
+        if (cursor.getCount() == 0) {
+
+            content.addView(
+                    text(
+                            "خرید تسویه‌نشده‌ای وجود ندارد.",
+                            15,
+                            WHITE,
+                            Typeface.NORMAL
+                    )
+            );
+
+            cursor.close();
+
+            return;
+        }
+
+        while (cursor.moveToNext()) {
+
+            final long id =
+                    cursor.getLong(0);
+
+            String farmerName =
+                    safe(cursor.getString(1));
+
+            int boxes =
+                    cursor.getInt(2);
+
+            double weight =
+                    cursor.getDouble(3);
+
+            double price =
+                    cursor.getDouble(4);
+
+            double total =
+                    cursor.getDouble(5);
+
+            String date =
+                    safe(cursor.getString(6));
+
+            String description =
+                    safe(cursor.getString(7));
+
+            LinearLayout card =
+                    rounded(
+                            WHITE,
+                            GOLD,
+                            1,
+                            14
+                    );
+
+            card.setPadding(
+                    dp(12),
+                    dp(10),
+                    dp(12),
+                    dp(10)
+            );
+
+            card.addView(
+                    text(
+                            "👨‍🌾 " + farmerName,
+                            16,
+                            DARK_GREEN,
+                            Typeface.BOLD
+                    )
+            );
+
+            card.addView(
+                    text(
+                            "📦 جعبه: " +
+                            boxes,
+                            14,
+                            DARK_GREEN,
+                            Typeface.NORMAL
+                    )
+            );
+
+            card.addView(
+                    text(
+                            "⚖️ وزن: " +
+                            formatNumber(weight) +
+                            " کیلو",
+                            14,
+                            DARK_GREEN,
+                            Typeface.NORMAL
+                    )
+            );
+
+            card.addView(
+                    text(
+                            "💵 قیمت هر کیلو: " +
+                            money(price),
+                            14,
+                            DARK_GREEN,
+                            Typeface.NORMAL
+                    )
+            );
+
+            card.addView(
+                    text(
+                            "💰 مبلغ کل: " +
+                            money(total),
+                            14,
+                            DARK_GREEN,
+                            Typeface.BOLD
+                    )
+            );
+
+            card.addView(
+                    text(
+                            "📅 تاریخ: " +
+                            date,
+                            14,
+                            DARK_GREEN,
+                            Typeface.NORMAL
+                    )
+            );
+
+            if (!description.isEmpty()) {
+
+                card.addView(
+                        text(
+                                "📝 " +
+                                description,
+                                14,
+                                DARK_GREEN,
+                                Typeface.NORMAL
+                        )
+                );
+            }
+
+            space(card, 8);
+
+            Button settle =
+                    addButton(
+                            "✅ تسویه حساب",
+                            v -> settlePurchase(id)
+                    );
+
+            card.addView(settle);
+
+            content.addView(
+                    card,
+                    new LinearLayout.LayoutParams(
+                            -1,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+            );
+
+            space(content, 10);
+        }
+
+        cursor.close();
+                      }
+                                String farmerName =
                                     farmer.getText()
                                             .toString()
                                             .trim();
@@ -1381,7 +2323,7 @@ public class MainActivity extends Activity {
                     )
             );
 
-            space(parent, 8);
+            spaceInside(parent, 10);
         }
 
         c.close();
@@ -1391,16 +2333,19 @@ public class MainActivity extends Activity {
     // SETTLE PURCHASE
     // =========================================================
 
-    private void settlePurchase(int id) {
+    private void settlePurchase(
+            int id
+    ) {
 
         new AlertDialog.Builder(this)
-                .setTitle("تسویه حساب باغدار")
+                .setTitle(
+                        "تسویه خرید باغدار"
+                )
                 .setMessage(
-                        "آیا این خرید تسویه شده است?\n" +
-                        "رکورد حذف نمی‌شود و در سوابق باقی می‌ماند."
+                        "آیا این خرید تسویه شده است؟"
                 )
                 .setPositiveButton(
-                        "تسویه شد",
+                        "بله، تسویه شد",
                         (dialog, which) -> {
 
                             ContentValues values =
@@ -1418,29 +2363,37 @@ public class MainActivity extends Activity {
 
                             int result =
                                     db.getWritableDatabase()
-                                                                          .update(
-                                                     "purchases",
-                                                     values,
-                                                     "id=?",
-                                                     new String[]{
-                                                             String.valueOf(id)
-                                                     }
-                                             );
+                                            .update(
+                                                    "purchases",
+                                                    values,
+                                                    "id=?",
+                                                    new String[]{
+                                                            String.valueOf(id)
+                                                    }
+                                            );
 
                             if (result > 0) {
 
                                 Toast.makeText(
                                         this,
-                                        "تسویه حساب ثبت شد.",
+                                        "خرید با موفقیت تسویه شد.",
+                                        Toast.LENGTH_SHORT
+                                ).show();
+
+                                showBuyFromFarmer();
+
+                            } else {
+
+                                Toast.makeText(
+                                        this,
+                                        "تسویه انجام نشد.",
                                         Toast.LENGTH_SHORT
                                 ).show();
                             }
-
-                            showBuyFromFarmer();
                         }
                 )
                 .setNegativeButton(
-                        "لغو",
+                        "انصراف",
                         null
                 )
                 .show();
@@ -1453,12 +2406,12 @@ public class MainActivity extends Activity {
     private void showSettledPurchases() {
 
         LinearLayout content =
-                page("تصفیه‌حساب‌های انجام‌شده");
+                page("خریدهای تسویه‌شده");
 
         Cursor c =
                 db.getReadableDatabase()
                         .rawQuery(
-                                "SELECT farmer,box_count," +
+                                "SELECT id,farmer,box_count," +
                                 "weight,price,total," +
                                 "purchase_date,settled_date," +
                                 "description " +
@@ -1472,43 +2425,50 @@ public class MainActivity extends Activity {
 
             content.addView(
                     text(
-                            "هنوز تسویه‌حساب انجام‌شده‌ای وجود ندارد.",
-                            15,
+                            "هنوز خرید تسویه‌شده‌ای وجود ندارد.",
+                            14,
                             WHITE,
                             Typeface.NORMAL
                     )
             );
+
+            c.close();
+
+            return;
         }
 
         while (c.moveToNext()) {
 
+            int id =
+                    c.getInt(0);
+
             String farmer =
-                    safe(c.getString(0));
+                    safe(c.getString(1));
 
             double boxes =
-                    c.getDouble(1);
-
-            double weight =
                     c.getDouble(2);
 
-            double price =
+            double weight =
                     c.getDouble(3);
 
-            double total =
+            double price =
                     c.getDouble(4);
 
-            String purchaseDate =
-                    safe(c.getString(5));
+            double total =
+                    c.getDouble(5);
 
-            String settledDate =
+            String purchaseDate =
                     safe(c.getString(6));
 
-            String description =
+            String settledDate =
                     safe(c.getString(7));
+
+            String description =
+                    safe(c.getString(8));
 
             LinearLayout card =
                     rounded(
-                            Color.rgb(12, 69, 48),
+                            WHITE,
                             GOLD,
                             1,
                             14
@@ -1524,15 +2484,26 @@ public class MainActivity extends Activity {
             card.addView(
                     text(
                             "👨‍🌾 باغدار: " + farmer +
-                            "\n📦 جعبه: " + formatNumber(boxes) +
-                            "\n⚖️ وزن: " + formatNumber(weight) + " کیلو" +
-                            "\n💵 قیمت: " + money(price) + " تومان" +
-                            "\n💰 مبلغ: " + money(total) + " تومان" +
-                            "\n📅 تاریخ خرید: " + purchaseDate +
-                            "\n✅ تاریخ تسویه: " + settledDate +
-                            "\n📝 " + description,
+                            "\n📦 تعداد جعبه: " +
+                            formatNumber(boxes) +
+                            "\n⚖️ وزن: " +
+                            formatNumber(weight) +
+                            " کیلو" +
+                            "\n💵 قیمت هر کیلو: " +
+                            money(price) +
+                            "\n💰 مبلغ کل: " +
+                            money(total) +
+                            " تومان" +
+                            "\n📅 تاریخ خرید: " +
+                            purchaseDate +
+                            "\n✅ تاریخ تسویه: " +
+                            settledDate +
+                            (description.isEmpty()
+                                    ? ""
+                                    : "\n📝 " +
+                                      description),
                             14,
-                            WHITE,
+                            DARK_GREEN,
                             Typeface.NORMAL
                     )
             );
@@ -1545,7 +2516,7 @@ public class MainActivity extends Activity {
                     )
             );
 
-            space(content, 8);
+            space(content, 10);
         }
 
         c.close();
@@ -1563,9 +2534,14 @@ public class MainActivity extends Activity {
         Cursor c =
                 db.getReadableDatabase()
                         .rawQuery(
-                                "SELECT DISTINCT farmer " +
+                                "SELECT farmer," +
+                                "COUNT(*)," +
+                                "COALESCE(SUM(box_count),0)," +
+                                "COALESCE(SUM(weight),0)," +
+                                "COALESCE(SUM(total),0) " +
                                 "FROM purchases " +
-                                "ORDER BY farmer",
+                                "GROUP BY farmer " +
+                                "ORDER BY farmer ASC",
                                 null
                         );
 
@@ -1573,22 +2549,38 @@ public class MainActivity extends Activity {
 
             content.addView(
                     text(
-                            "هنوز باغداری ثبت نشده است.",
-                            15,
+                            "هنوز پرونده باغداری ثبت نشده است.",
+                            14,
                             WHITE,
                             Typeface.NORMAL
                     )
             );
+
+            c.close();
+
+            return;
         }
 
         while (c.moveToNext()) {
 
-            final String farmer =
+            String farmer =
                     safe(c.getString(0));
+
+            int count =
+                    c.getInt(1);
+
+            double boxes =
+                    c.getDouble(2);
+
+            double weight =
+                    c.getDouble(3);
+
+            double total =
+                    c.getDouble(4);
 
             LinearLayout card =
                     rounded(
-                            Color.rgb(12, 69, 48),
+                            WHITE,
                             GOLD,
                             1,
                             14
@@ -1601,23 +2593,42 @@ public class MainActivity extends Activity {
                     dp(12)
             );
 
-            TextView name =
+            card.addView(
                     text(
                             "👨‍🌾 " + farmer,
                             17,
-                            WHITE,
+                            DARK_GREEN,
                             Typeface.BOLD
-                    );
+                    )
+            );
 
-            card.addView(name);
+            card.addView(
+                    text(
+                            "تعداد خرید: " +
+                            count +
+                            "\n📦 مجموع جعبه: " +
+                            formatNumber(boxes) +
+                            "\n⚖️ مجموع وزن: " +
+                            formatNumber(weight) +
+                            " کیلو" +
+                            "\n💰 مجموع مبلغ: " +
+                            money(total) +
+                            " تومان",
+                            14,
+                            DARK_GREEN,
+                            Typeface.NORMAL
+                    )
+            );
 
-            Button view =
+            Button history =
                     addButton(
-                            "📋 مشاهده سابقه و حساب",
-                            v -> showFarmerHistory(farmer)
+                            "📜 مشاهده تاریخچه این باغدار",
+                            v -> showFarmerHistory(
+                                    farmer
+                            )
                     );
 
-            card.addView(view);
+            card.addView(history);
 
             content.addView(
                     card,
@@ -1627,7 +2638,7 @@ public class MainActivity extends Activity {
                     )
             );
 
-            space(content, 8);
+            space(content, 10);
         }
 
         c.close();
@@ -1642,79 +2653,16 @@ public class MainActivity extends Activity {
     ) {
 
         LinearLayout content =
-                page("حساب باغدار: " + farmer);
+                page(
+                        "تاریخچه: " + farmer
+                );
 
-        Cursor summary =
+        Cursor c =
                 db.getReadableDatabase()
                         .rawQuery(
-                                "SELECT " +
-                                "COUNT(*), " +
-                                "COALESCE(SUM(weight),0), " +
-                                "COALESCE(SUM(total),0), " +
-                                "COALESCE(SUM(CASE " +
-                                "WHEN settled=0 THEN total " +
-                                "ELSE 0 END),0), " +
-                                "COALESCE(SUM(CASE " +
-                                "WHEN settled=1 THEN total " +
-                                "ELSE 0 END),0) " +
-                                "FROM purchases " +
-                                "WHERE farmer=?",
-                                new String[]{
-                                        farmer
-                                }
-                        );
-
-        if (summary.moveToFirst()) {
-
-            int count =
-                    summary.getInt(0);
-
-            double weight =
-                    summary.getDouble(1);
-
-            double total =
-                    summary.getDouble(2);
-
-            double unpaid =
-                    summary.getDouble(3);
-
-            double settled =
-                    summary.getDouble(4);
-
-            content.addView(
-                    text(
-                            "📊 خلاصه حساب\n" +
-                            "تعداد خرید: " + count +
-                            "\n⚖️ مجموع وزن: " +
-                            formatNumber(weight) +
-                            " کیلو" +
-                            "\n💰 مجموع خرید: " +
-                            money(total) +
-                            " تومان" +
-                            "\n🔴 بدهی باقی‌مانده: " +
-                            money(unpaid) +
-                            " تومان" +
-                            "\n✅ تسویه‌شده: " +
-                            money(settled) +
-                            " تومان",
-                            16,
-                            WHITE,
-                            Typeface.NORMAL
-                    )
-            );
-        }
-
-        summary.close();
-
-        space(content, 15);
-
-        Cursor history =
-                db.getReadableDatabase()
-                        .rawQuery(
-                                "SELECT box_count,weight," +
+                                "SELECT id,box_count,weight," +
                                 "price,total,purchase_date," +
-                                "settled,settled_date," +
-                                "description " +
+                                "settled,settled_date,description " +
                                 "FROM purchases " +
                                 "WHERE farmer=? " +
                                 "ORDER BY id DESC",
@@ -1723,74 +2671,116 @@ public class MainActivity extends Activity {
                                 }
                         );
 
-        while (history.moveToNext()) {
-
-            double boxes =
-                    history.getDouble(0);
-
-            double weight =
-                    history.getDouble(1);
-
-            double price =
-                    history.getDouble(2);
-
-            double total =
-                    history.getDouble(3);
-
-            String purchaseDate =
-                    safe(history.getString(4));
-
-            int settled =
-                    history.getInt(5);
-
-            String settledDate =
-                    safe(history.getString(6));
-
-            String description =
-                    safe(history.getString(7));
-
-            String status =
-                    settled == 1
-                            ? "✅ تسویه شده"
-                            : "🔴 تسویه نشده";
+        if (c.getCount() == 0) {
 
             content.addView(
                     text(
-                            "📦 جعبه: " +
-                            formatNumber(boxes) +
-                            "\n⚖️ وزن: " +
-                            formatNumber(weight) +
-                            " کیلو" +
-                            "\n💵 قیمت: " +
-                            money(price) +
-                            " تومان" +
-                            "\n💰 مبلغ: " +
-                            money(total) +
-                            " تومان" +
-                            "\n📅 خرید: " +
-                            purchaseDate +
-                            "\n" + status +
-                            (settled == 1
-                                    ? "\n✅ تاریخ تسویه: " +
-                                      settledDate
-                                    : "") +
-                            "\n📝 " +
-                            description,
+                            "برای این باغدار سابقه‌ای ثبت نشده است.",
                             14,
                             WHITE,
                             Typeface.NORMAL
                     )
             );
 
+            c.close();
+
+            return;
+        }
+
+        while (c.moveToNext()) {
+
+            int id =
+                    c.getInt(0);
+
+            double boxes =
+                    c.getDouble(1);
+
+            double weight =
+                    c.getDouble(2);
+
+            double price =
+                    c.getDouble(3);
+
+            double total =
+                    c.getDouble(4);
+
+            String purchaseDate =
+                    safe(c.getString(5));
+
+            int settled =
+                    c.getInt(6);
+
+            String settledDate =
+                    safe(c.getString(7));
+
+            String description =
+                    safe(c.getString(8));
+
+            String status =
+                    settled == 1
+                            ? "تسویه شده"
+                            : "تسویه نشده";
+
+            LinearLayout card =
+                    rounded(
+                            WHITE,
+                            GOLD,
+                            1,
+                            14
+                    );
+
+            card.setPadding(
+                    dp(12),
+                    dp(12),
+                    dp(12),
+                    dp(12)
+            );
+
+            card.addView(
+                    text(
+                            "خرید #" + id +
+                            "\n📦 جعبه: " +
+                            formatNumber(boxes) +
+                            "\n⚖️ وزن: " +
+                            formatNumber(weight) +
+                            " کیلو" +
+                            "\n💵 قیمت هر کیلو: " +
+                            money(price) +
+                            "\n💰 مبلغ کل: " +
+                            money(total) +
+                            " تومان" +
+                            "\n📅 تاریخ خرید: " +
+                            purchaseDate +
+                            "\n🔵 وضعیت: " +
+                            status +
+                            (settledDate.isEmpty()
+                                    ? ""
+                                    : "\n✅ تاریخ تسویه: " +
+                                      settledDate) +
+                            (description.isEmpty()
+                                    ? ""
+                                    : "\n📝 " +
+                                      description),
+                            14,
+                            DARK_GREEN,
+                            Typeface.NORMAL
+                    )
+            );
+
+            content.addView(
+                    card,
+                    new LinearLayout.LayoutParams(
+                            -1,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+            );
+
             space(content, 10);
         }
 
-        history.close();
+        c.close();
     }
 
-    // =========================================================
-    // END PART 2
-    // =========================================================
     // =========================================================
     // DAILY PRICE
     // =========================================================
@@ -1798,7 +2788,7 @@ public class MainActivity extends Activity {
     private void showDailyPrice() {
 
         LinearLayout content =
-                page("قیمت روز انگور");
+                page("قیمت روز انگور شانی");
 
         content.addView(
                 text(
@@ -2146,7 +3136,7 @@ public class MainActivity extends Activity {
                             WHITE,
                             Typeface.NORMAL
                     )
-            );
+                          );
 
             spaceInside(card, 8);
 
@@ -2418,7 +3408,7 @@ public class MainActivity extends Activity {
                 createSpinnerAdapter(
                         firstCities
                 )
-        );   
+        );
 
         content.addView(
                 citySpinner,
@@ -2502,163 +3492,265 @@ public class MainActivity extends Activity {
 
         content.addView(price);
 
+        space(content, 10);
+
         // -----------------------------------------------------
-        // TOTAL
+        // ADDRESS
         // -----------------------------------------------------
 
         content.addView(
-                label("مبلغ کل سفارش")
+                label("آدرس تحویل")
         );
 
-        TextView total =
-                text(
-                        "0 تومان",
-                        20,
-                        GOLD,
-                        Typeface.BOLD
-                );
+        EditText address =
+                input("آدرس کامل محل تحویل");
 
-        content.addView(total);
+        content.addView(address);
 
-        weight.addTextChangedListener(
-                new android.text.TextWatcher() {
+        space(content, 10);
 
-                    @Override
-                    public void beforeTextChanged(
-                            CharSequence s,
-                            int start,
-                            int count,
-                            int after
-                    ) {
-                    }
+        // -----------------------------------------------------
+        // DEPOSIT
+        // -----------------------------------------------------
 
-                    @Override
-                    public void onTextChanged(
-                            CharSequence s,
-                            int start,
-                            int before,
-                            int count
-                    ) {
-
-                        double w =
-                                parseDouble(
-                                        s.toString()
-                                );
-
-                        total.setText(
-                                money(
-                                        w * dailyPrice
-                                ) +
-                                " تومان"
-                        );
-                    }
-
-                    @Override
-                    public void afterTextChanged(
-                            android.text.Editable s
-                    ) {
-                    }
-                }
+        content.addView(
+                label("بیعانه")
         );
+
+        EditText deposit =
+                input("مبلغ بیعانه");
+
+        deposit.setInputType(
+                android.text.InputType.TYPE_CLASS_NUMBER |
+                android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+        );
+
+        content.addView(deposit);
 
         space(content, 12);
 
-        // -----------------------------------------------------
-        // SAVE
-        // -----------------------------------------------------
+        Button calculate =
+                addButton(
+                        "🧮 محاسبه مبلغ سفارش",
+                        v -> {
+
+                            double weightValue =
+                                    parseDouble(
+                                            weight.getText()
+                                                    .toString()
+                                    );
+
+                            if (weightValue <= 0) {
+
+                                showToast(
+                                        "وزن سفارش را وارد کنید."
+                                );
+
+                                return;
+                            }
+
+                            double currentPrice =
+                                    currentDailyPrice();
+
+                            if (currentPrice <= 0) {
+
+                                showToast(
+                                        "ابتدا قیمت روز را ثبت کنید."
+                                );
+
+                                return;
+                            }
+
+                            double total =
+                                    weightValue *
+                                    currentPrice;
+
+                            double required =
+                                    calculateDeposit(
+                                            total
+                                    );
+
+                            price.setText(
+                                    money(currentPrice) +
+                                    " تومان\n" +
+                                    "مبلغ کل: " +
+                                    money(total) +
+                                    " تومان\n" +
+                                    "بیعانه موردنیاز: " +
+                                    money(required) +
+                                    " تومان"
+                            );
+                        }
+                );
+
+        content.addView(calculate);
+
+        space(content, 8);
 
         Button save =
                 addButton(
                         "📦 ثبت سفارش",
                         v -> {
 
-                            String customerName =
-                                    customer.getText()
-                                            .toString()
-                                            .trim();
+                            String customerValue =
+                                    cleanText(
+                                            customer.getText()
+                                                    .toString()
+                                    );
 
-                            double orderWeight =
+                            String provinceValue =
+                                    provinceSpinner
+                                            .getSelectedItem()
+                                            .toString();
+
+                            String cityValue =
+                                    citySpinner
+                                            .getSelectedItem()
+                                            .toString();
+
+                            double weightValue =
                                     parseDouble(
                                             weight.getText()
                                                     .toString()
                                     );
 
-                            if (customerName.isEmpty()) {
-
-                                Toast.makeText(
-                                        this,
-                                        "نام مشتری را وارد کنید.",
-                                        Toast.LENGTH_SHORT
-                                ).show();
-
-                                return;
-                            }
-
-                            if (orderWeight <= 0) {
-
-                                Toast.makeText(
-                                        this,
-                                        "وزن سفارش را وارد کنید.",
-                                        Toast.LENGTH_SHORT
-                                ).show();
-
-                                return;
-                            }
-
-                            String selectedProvince =
-                                    provinceSpinner
-                                            .getSelectedItem()
-                                            .toString();
-
-                            String selectedCity =
-                                    citySpinner
-                                            .getSelectedItem()
-                                            .toString();
-
-                            double orderTotal =
-                                    orderWeight *
-                                    dailyPrice;
-
-                            double requiredDeposit =
-                                    calculateDeposit(
-                                            orderTotal
+                            double depositValue =
+                                    parseDouble(
+                                            deposit.getText()
+                                                    .toString()
                                     );
+
+                            String addressValue =
+                                    cleanText(
+                                            address.getText()
+                                                    .toString()
+                                    );
+
+                            double currentPrice =
+                                    currentDailyPrice();
+
+                            if (customerValue.isEmpty()) {
+
+                                showToast(
+                                        "نام مشتری را وارد کنید."
+                                );
+
+                                return;
+                            }
+
+                            if (weightValue <= 0) {
+
+                                showToast(
+                                        "وزن سفارش را وارد کنید."
+                                );
+
+                                return;
+                            }
+
+                            if (currentPrice <= 0) {
+
+                                showToast(
+                                        "ابتدا قیمت روز را ثبت کنید."
+                                );
+
+                                return;
+                            }
+
+                            double total =
+                                    weightValue *
+                                    currentPrice;
+
+                            double required =
+                                    calculateDeposit(
+                                            total
+                                    );
+
+                            String status;
+
+                            int confirmed;
+
+                            if (depositValue >= required) {
+
+                                status =
+                                        "confirmed";
+
+                                confirmed = 1;
+
+                            } else {
+
+                                status =
+                                        "awaiting_deposit";
+
+                                confirmed = 0;
+                            }
 
                             ContentValues values =
                                     new ContentValues();
 
                             values.put(
                                     "customer",
-                                    customerName
+                                    customerValue
                             );
 
                             values.put(
                                     "province",
-                                    selectedProvince
+                                    provinceValue
                             );
 
                             values.put(
                                     "city",
-                                    selectedCity
+                                    cityValue
+                            );
+
+                            values.put(
+                                    "address",
+                                    addressValue
                             );
 
                             values.put(
                                     "weight",
-                                    orderWeight
+                                    weightValue
                             );
 
                             values.put(
                                     "price",
-                                    dailyPrice
+                                    currentPrice
+                            );
+
+                            values.put(
+                                    "final_price",
+                                    0
                             );
 
                             values.put(
                                     "total",
-                                    orderTotal
+                                    total
                             );
 
                             values.put(
-                                    "media_uri",
+                                    "deposit_required",
+                                    required
+                            );
+
+                            values.put(
+                                    "deposit_paid",
+                                    depositValue
+                            );
+
+                            values.put(
+                                    "deposit_status",
+                                    depositValue >= required
+                                            ? "paid"
+                                            : "pending"
+                            );
+
+                            values.put(
+                                    "transaction_id",
+                                    ""
+                            );
+
+                            values.put(
+                                    "payment_date",
                                     ""
                             );
 
@@ -2672,87 +3764,17 @@ public class MainActivity extends Activity {
                                     ""
                             );
 
-                            if (requiredDeposit > 0) {
-
-                                values.put(
-                                        "status",
-                                        "awaiting_deposit"
-                                );
-
-                                values.put(
-                                        "confirmed",
-                                        0
-                                );
-
-                                values.put(
-                                        "deposit_required",
-                                        requiredDeposit
-                                );
-
-                                values.put(
-                                        "deposit_paid",
-                                        0
-                                );
-
-                                values.put(
-                                        "deposit_status",
-                                        "unpaid"
-                                );
-
-                                values.put(
-                                        "transaction_id",
-                                        ""
-                                );
-
-                                values.put(
-                                        "payment_date",
-                                        ""
-                                );
-
-                            } else {
-
-                                values.put(
-                                        "status",
-                                        "pending"
-                                );
-
-                                values.put(
-                                        "confirmed",
-                                        1
-                                );
-
-                                values.put(
-                                        "deposit_required",
-                                        0
-                                );
-
-                                values.put(
-                                        "deposit_paid",
-                                        0
-                                );
-
-                                values.put(
-                                        "deposit_status",
-                                        "not_required"
-                                );
-
-                                values.put(
-                                        "transaction_id",
-                                        ""
-                                );
-
-                                values.put(
-                                        "payment_date",
-                                        ""
-                                );
-                            }
-
                             values.put(
-                                    "final_price",
-                                    0
+                                    "status",
+                                    status
                             );
 
-                            long orderId =
+                            values.put(
+                                    "confirmed",
+                                    confirmed
+                            );
+
+                            long result =
                                     db.getWritableDatabase()
                                             .insert(
                                                     "orders",
@@ -2760,33 +3782,20 @@ public class MainActivity extends Activity {
                                                     values
                                             );
 
-                            if (orderId == -1) {
+                            if (result == -1) {
 
-                                Toast.makeText(
-                                        this,
-                                        "ثبت سفارش انجام نشد.",
-                                        Toast.LENGTH_SHORT
-                                ).show();
+                                showToast(
+                                        "ثبت سفارش انجام نشد."
+                                );
 
                                 return;
                             }
 
-                            if (requiredDeposit > 0) {
-
-                                Toast.makeText(
-                                        this,
-                                        "سفارش ذخیره شد، اما تا پرداخت و تأیید بیعانه قطعی نیست.",
-                                        Toast.LENGTH_LONG
-                                ).show();
-
-                            } else {
-
-                                Toast.makeText(
-                                        this,
-                                        "سفارش با موفقیت ثبت شد.",
-                                        Toast.LENGTH_SHORT
-                                ).show();
-                            }
+                            showToast(
+                                    confirmed == 1
+                                            ? "سفارش قطعی ثبت شد."
+                                            : "سفارش ثبت شد و در انتظار بیعانه است."
+                            );
 
                             showOrders();
                         }
@@ -2803,39 +3812,35 @@ public class MainActivity extends Activity {
             double total
     ) {
 
+        if (total <= 0) {
+            return 0;
+        }
+
         Cursor c =
                 db.getReadableDatabase()
                         .rawQuery(
-                                "SELECT mode,value " +
-                                "FROM deposit_settings " +
-                                "WHERE id=1",
+                                "SELECT value " +
+                                "FROM settings " +
+                                "WHERE key='deposit_percent' " +
+                                "LIMIT 1",
                                 null
                         );
 
-        double result = 0;
+        double percent = 20;
 
         if (c.moveToFirst()) {
 
-            String mode =
-                    safe(c.getString(0));
-
-            double value =
-                    c.getDouble(1);
-
-            if ("percent".equals(mode)) {
-
-                result =
-                        total * value / 100.0;
-
-            } else if ("fixed".equals(mode)) {
-
-                result = value;
-            }
+            percent =
+                    parseDouble(
+                            c.getString(0)
+                    );
         }
 
         c.close();
 
-        return result;
+        return total *
+                percent /
+                100.0;
     }
 
     // =========================================================
@@ -2864,11 +3869,9 @@ public class MainActivity extends Activity {
 
             c.close();
 
-            Toast.makeText(
-                    this,
-                    "سفارش پیدا نشد.",
-                    Toast.LENGTH_SHORT
-            ).show();
+            showToast(
+                    "سفارش پیدا نشد."
+            );
 
             return;
         }
@@ -2898,7 +3901,7 @@ public class MainActivity extends Activity {
 
         new AlertDialog.Builder(this)
                 .setTitle(
-                        "بیعانه سفارش " +
+                        "وضعیت بیعانه سفارش #" +
                         orderId
                 )
                 .setMessage(
@@ -2991,16 +3994,19 @@ public class MainActivity extends Activity {
                                                     }
                                             );
 
-                            double price = 0;
+                            double priceValue = 0;
 
                             if (c.moveToFirst()) {
-                                price = c.getDouble(0);
+
+                                priceValue =
+                                        c.getDouble(0);
                             }
 
                             c.close();
 
                             double newTotal =
-                                    newWeight * price;
+                                    newWeight *
+                                    priceValue;
 
                             ContentValues values =
                                     new ContentValues();
@@ -3063,21 +4069,22 @@ public class MainActivity extends Activity {
                         );
 
         double weight = 0;
-        double price = 0;
+        double priceValue = 0;
 
         if (c.moveToFirst()) {
 
             weight =
                     c.getDouble(0);
 
-            price =
+            priceValue =
                     c.getDouble(1);
         }
 
         c.close();
 
         double finalTotal =
-                weight * price;
+                weight *
+                priceValue;
 
         ContentValues values =
                 new ContentValues();
@@ -3094,7 +4101,7 @@ public class MainActivity extends Activity {
 
         values.put(
                 "final_price",
-                price
+                priceValue
         );
 
         values.put(
@@ -3125,9 +4132,6 @@ public class MainActivity extends Activity {
         showOrders();
     }
 
-    // =========================================================
-    // END PART 3
-    // =========================================================
     // =========================================================
     // REPORTS
     // =========================================================
@@ -3222,9 +4226,8 @@ public class MainActivity extends Activity {
                             WHITE,
                             Typeface.NORMAL
                     )
-            );
-
-            content.addView(
+            );  
+                    content.addView(
                     card,
                     new LinearLayout.LayoutParams(
                             -1,
@@ -3550,6 +4553,7 @@ public class MainActivity extends Activity {
                         );
 
         if (c.getCount() == 0) {
+
             content.addView(
                     text(
                             "گالری هنوز خالی است.",
@@ -3592,26 +4596,30 @@ public class MainActivity extends Activity {
                             type
                     );
 
-            card.addView(
-                    image,
-                    new LinearLayout.LayoutParams(
-                            -1,
-                            dp(210)
-                    )
-            );
+            if (image != null) {
 
-            spaceInside(card, 8);
+                card.addView(
+                        image,
+                        new LinearLayout.LayoutParams(
+                                -1,
+                                dp(220)
+                        )
+                );
 
-            card.addView(
-                    text(
-                            title.isEmpty()
-                                    ? "تصویر ZERIVA"
-                                    : title,
-                            14,
-                            WHITE,
-                            Typeface.NORMAL
-                    )
-            );
+                spaceInside(card, 8);
+            }
+
+            if (!title.isEmpty()) {
+
+                card.addView(
+                        text(
+                                title,
+                                15,
+                                WHITE,
+                                Typeface.BOLD
+                        )
+                );
+            }
 
             Button view =
                     addButton(
@@ -3669,12 +4677,17 @@ public class MainActivity extends Activity {
     }
 
     // =========================================================
-    // SAVE GALLERY
+    // SAVE GALLERY MEDIA
     // =========================================================
 
     private void saveGalleryMedia() {
 
         if (selectedGalleryUri == null) {
+
+            showToast(
+                    "ابتدا عکس یا ویدیو را انتخاب کنید."
+            );
+
             return;
         }
 
@@ -3722,84 +4735,92 @@ public class MainActivity extends Activity {
                                 values
                         );
 
-        if (id != -1) {
+        if (id == -1) {
 
-            persistUri(
-                    selectedGalleryUri
+            showToast(
+                    "ذخیره رسانه انجام نشد."
             );
 
-            Toast.makeText(
-                    this,
-                    "فایل به گالری اضافه شد.",
-                    Toast.LENGTH_SHORT
-            ).show();
-
-            showGallery();
+            return;
         }
+
+        persistUri(
+                selectedGalleryUri
+        );
+
+        showToast(
+                "رسانه به گالری اضافه شد."
+        );
+
+        showGallery();
     }
 
     // =========================================================
-    // MEDIA PREVIEW
+    // CREATE MEDIA PREVIEW
     // =========================================================
 
     private ImageView createMediaPreview(
-            String uriText,
+            String uriString,
             String type
     ) {
 
-        ImageView image =
-                new ImageView(this);
+        if (uriString == null ||
+                uriString.isEmpty()) {
 
-        image.setScaleType(
-                ImageView.ScaleType.CENTER_CROP
-        );
+            return null;
+        }
 
         try {
 
-            if (uriText != null &&
-                    !uriText.isEmpty()) {
+            Uri uri =
+                    Uri.parse(
+                            uriString
+                    );
 
-                Uri uri =
-                        Uri.parse(uriText);
+            ImageView image =
+                    new ImageView(this);
+
+            image.setScaleType(
+                    ImageView.ScaleType.CENTER_CROP
+            );
+
+            if (type != null &&
+                    type.startsWith("image")) {
 
                 InputStream input =
                         getContentResolver()
                                 .openInputStream(uri);
 
-                Bitmap bitmap =
-                        BitmapFactory
-                                .decodeStream(input);
-
                 if (input != null) {
+
+                    Bitmap bitmap =
+                            BitmapFactory.decodeStream(
+                                    input
+                            );
+
                     input.close();
+
+                    if (bitmap != null) {
+
+                        image.setImageBitmap(
+                                bitmap
+                        );
+
+                        return image;
+                    }
                 }
-
-                if (bitmap != null) {
-                    image.setImageBitmap(
-                            bitmap
-                    );
-
-                } else {
-                    image.setImageResource(
-                            android.R.drawable.ic_menu_gallery
-                    );
-                }
-
-            } else {
-
-                image.setImageResource(
-                        android.R.drawable.ic_menu_gallery
-                );
             }
+
+            image.setImageResource(
+                    android.R.drawable.ic_media_play
+            );
+
+            return image;
 
         } catch (Exception e) {
 
-            image.setImageResource(
-                    android.R.drawable.ic_menu_gallery
-            );
+            return null;
         }
-
-        return image;
     }
 
     // =========================================================
@@ -3809,11 +4830,11 @@ public class MainActivity extends Activity {
     private void showSatisfaction() {
 
         LinearLayout content =
-                page("رضایت مشتری");
+                page("رضایت مشتریان");
 
         content.addView(
                 text(
-                        "⭐ ثبت رضایت مشتریان",
+                        "⭐ رضایت مشتریان ZERIVA",
                         20,
                         GOLD,
                         Typeface.BOLD
@@ -3822,40 +4843,42 @@ public class MainActivity extends Activity {
 
         space(content, 10);
 
+        EditText customerName =
+                input("نام مشتری");
+
+        EditText customerCity =
+                input("شهر");
+
+        EditText message =
+                input("متن رضایت مشتری");
+
         content.addView(
                 label("نام مشتری")
         );
 
-        EditText customer =
-                input("نام مشتری");
+        content.addView(
+                customerName
+        );
 
-        content.addView(customer);
+        space(content, 6);
 
         content.addView(
                 label("شهر")
         );
 
-        EditText city =
-                input("شهر مشتری");
+        content.addView(
+                customerCity
+        );
 
-        content.addView(city);
+        space(content, 6);
 
         content.addView(
-                label("متن رضایت مشتری")
+                label("متن رضایت")
         );
 
-        EditText message =
-                input(
-                        "متن رضایت یا نظر مشتری..."
-                );
-
-        message.setMinLines(4);
-
-        message.setGravity(
-                Gravity.TOP
+        content.addView(
+                message
         );
-
-        content.addView(message);
 
         space(content, 10);
 
@@ -3867,45 +4890,70 @@ public class MainActivity extends Activity {
 
         content.addView(media);
 
+        space(content, 8);
+
         Button save =
                 addButton(
-                        "💾 ذخیره رضایت",
+                        "💾 ثبت رضایت مشتری",
                         v -> {
 
-                            String customerName =
-                                    customer.getText()
-                                            .toString()
-                                            .trim();
+                            String customerValue =
+                                    cleanText(
+                                            customerName
+                                                    .getText()
+                                                    .toString()
+                                    );
 
-                            String customerCity =
-                                    city.getText()
-                                            .toString()
-                                            .trim();
+                            String cityValue =
+                                    cleanText(
+                                            customerCity
+                                                    .getText()
+                                                    .toString()
+                                    );
 
-                            String text =
-                                    message.getText()
-                                            .toString()
-                                            .trim();
+                            String messageValue =
+                                    cleanText(
+                                            message
+                                                    .getText()
+                                                    .toString()
+                                    );
 
-                            if (customerName.isEmpty() &&
-                                    text.isEmpty()) {
+                            if (customerValue.isEmpty()) {
 
-                                Toast.makeText(
-                                        this,
-                                        "اطلاعات رضایت را وارد کنید.",
-                                        Toast.LENGTH_SHORT
-                                ).show();
+                                showToast(
+                                        "نام مشتری را وارد کنید."
+                                );
 
                                 return;
                             }
 
-                            String uri =
+                            ContentValues values =
+                                    new ContentValues();
+
+                            values.put(
+                                    "customer_name",
+                                    customerValue
+                            );
+
+                            values.put(
+                                    "city",
+                                    cityValue
+                            );
+
+                            values.put(
+                                    "message",
+                                    messageValue
+                            );
+
+                            values.put(
+                                    "uri",
                                     selectedSatisfactionUri == null
                                             ? ""
-                                            : selectedSatisfactionUri
-                                                    .toString();
+                                            : selectedSatisfactionUri.toString()
+                            );
 
-                            String type =
+                            values.put(
+                                    "type",
                                     selectedSatisfactionUri == null
                                             ? ""
                                             : safe(
@@ -3913,29 +4961,7 @@ public class MainActivity extends Activity {
                                                             .getType(
                                                                     selectedSatisfactionUri
                                                             )
-                                              );
-
-                            ContentValues values =
-                                    new ContentValues();
-
-                            values.put(
-                                    "uri",
-                                    uri
-                            );
-
-                            values.put(
-                                    "type",
-                                    type
-                            );
-
-                            values.put(
-                                    "customer_name",
-                                    customerName
-                            );
-
-                            values.put(
-                                    "city",
-                                    customerCity
+                                              )
                             );
 
                             values.put(
@@ -4093,208 +5119,7 @@ public class MainActivity extends Activity {
                 intent,
                 1003
         );
-    }
-
-    // =========================================================
-    // END PART 4
-    // =========================================================
-    // =========================
-    // PART 5
-    // مدیریت، فروش، معاملات و تنظیمات
-    // =========================
-
-    private void showChat() {
-
-        LinearLayout content = page("ارتباط با مشتری");
-
-        content.addView(
-                text(
-                        "💬 ارتباط با مشتریان ZERIVA",
-                        20,
-                        GOLD,
-                        Typeface.BOLD
-                )
-        );
-
-        content.addView(
-                text(
-                        "برای ارتباط با مشتریان می‌توانید از شماره تماس و صفحه اینستاگرام ZERIVA استفاده کنید.",
-                        15,
-                        WHITE,
-                        Gravity.RIGHT
-                )
-        );
-
-        space(content, 12);
-
-        content.addView(
-                text(
-                        "📞 تماس: " + PHONE +
-                        "\n📱 اینستاگرام: " + INSTAGRAM,
-                        16,
-                        WHITE,
-                        Gravity.RIGHT
-                )
-        );
-    }
-
-    private void showManagement() {
-
-        page("مدیریت ZERIVA");
-
-        addButton(
-                root,
-                "تنظیم پیش‌پرداخت سفارش‌ها",
-                v -> showDepositSettings()
-        );
-
-        addButton(
-                root,
-                "گزارش سفارش‌ها",
-                v -> showOrders()
-        );
-
-        addButton(
-                root,
-                "حساب‌ها و معاملات",
-                v -> showTransactions()
-        );
-
-        addButton(
-                root,
-                "فروش و ارسال",
-                v -> showSales()
-        );
-
-        addButton(
-                root,
-                "گزارش مالی",
-                v -> showReports()
-        );
-
-        addButton(
-                root,
-                "امنیت برنامه",
-                v -> showSecuritySettings()
-        );
-
-        space(root, 20);
-
-        text(
-                root,
-                "تنظیمات مدیریتی فقط برای صاحب برنامه در نظر گرفته شده است.",
-                14,
-                GRAY,
-                Gravity.CENTER
-        );
-    }
-
-    private void showDepositSettings() {
-
-        page("تنظیم پیش‌پرداخت");
-
-        SQLiteDatabase d =
-                db.getReadableDatabase();
-
-        Cursor c =
-                d.rawQuery(
-                        "SELECT type,value FROM deposit_settings WHERE id=1",
-                        null
-                );
-
-        String type = "percent";
-        double value = 0;
-
-        if (c.moveToFirst()) {
-
-            type =
-                    safe(
-                            c.getString(0),
-                            "percent"
-                    );
-
-            value =
-                    c.getDouble(1);
-        }
-
-        c.close();
-
-        TextView info =
-                text(
-                        root,
-                        "این مبلغ برای همه مشتریان اعمال می‌شود.\n" +
-                        "سفارش تا زمان پرداخت و تأیید پیش‌پرداخت، قطعی نمی‌شود.",
-                        15,
-                        GRAY,
-                        Gravity.RIGHT
-                );
-
-        space(root, 10);
-
-        Spinner typeSpinner =
-                new Spinner(this);
-
-        ArrayList<String> types =
-                new ArrayList<>();
-
-        types.add("درصدی");
-        types.add("مبلغ ثابت");
-
-        typeSpinner.setAdapter(
-                createSpinnerAdapter(types)
-        );
-
-        if ("fixed".equals(type)) {
-            typeSpinner.setSelection(1);
-        } else {
-            typeSpinner.setSelection(0);
-        }
-
-        root.addView(typeSpinner);
-
-        EditText valueInput =
-                input(
-                        "مقدار پیش‌پرداخت",
-                        String.valueOf(value)
-                );
-
-        root.addView(valueInput);
-
-        space(root, 10);
-
-        Button save =
-                addButton(
-                        root,
-                        "ذخیره تنظیمات",
-                        v -> {
-
-                            double amount =
-                                    parseDouble(
-                                            valueInput
-                                                    .getText()
-                                                    .toString()
-                                    );
-
-                            if (amount < 0) {
-
-                                Toast.makeText(
-                                        this,
-                                        "مقدار صحیح وارد کنید",
-                                        Toast.LENGTH_SHORT
-                                ).show();
-
-                                return;
-                            }
-
-                            String selected =
-                                    typeSpinner
-                                            .getSelectedItemPosition() == 1
-                                            ? "fixed"
-                                            : "percent";
-
-                            SQLiteDatabase w =
-                                    db.getWritableDatabase();
-
+                        }
                             ContentValues cv =
                                     new ContentValues();
 
@@ -4697,627 +5522,7 @@ public class MainActivity extends Activity {
                 GRAY,
                 Gravity.RIGHT
         );
-
-        space(root, 15);
-
-        addButton(
-                root,
-                "تغییر رمز ورود",
-                v -> changePassword()
-        );
-
-        addButton(
-                root,
-                "فعال / غیرفعال کردن رمز",
-                v -> togglePassword()
-        );
-
-        space(root, 15);
-
-        text(
-                root,
-                "نسخه فعلی از رمز محلی برنامه استفاده می‌کند. اتصال اثرانگشت به لایه امنیتی دستگاه در مرحله بعدی قابل اضافه شدن است.",
-                13,
-                GRAY,
-                Gravity.RIGHT
-        );
-    }
-
-    private void changePassword() {
-
-        final EditText password = input(
-                "رمز جدید",
-                ""
-        );
-
-        password.setInputType(
-                android.text.InputType.TYPE_CLASS_NUMBER |
-                        android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
-        );
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("تغییر رمز")
-                .setView(password)
-                .setNegativeButton("انصراف", null)
-                .setPositiveButton("ذخیره", null)
-                .create();
-
-        dialog.setOnShowListener(v -> {
-
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                    .setOnClickListener(btn -> {
-
-                        String pass =
-                                password.getText().toString().trim();
-
-                        if (pass.length() < 4) {
-
-                            Toast.makeText(
-                                    this,
-                                    "رمز باید حداقل ۴ رقم باشد",
-                                    Toast.LENGTH_SHORT
-                            ).show();
-
-                            return;
-                        }
-
-                        getSharedPreferences(
-                                "zeriva_security",
-                                MODE_PRIVATE
-                        )
-                                .edit()
-                                .putString("password", pass)
-                                .putBoolean("enabled", true)
-                                .apply();
-
-                        Toast.makeText(
-                                this,
-                                "رمز با موفقیت ذخیره شد",
-                                Toast.LENGTH_SHORT
-                        ).show();
-
-                        dialog.dismiss();
-                    });
-        });
-
-        dialog.show();
-    }
-
-    private void togglePassword() {
-
-        android.content.SharedPreferences sp =
-                getSharedPreferences(
-                        "zeriva_security",
-                        MODE_PRIVATE
-                );
-
-        boolean enabled =
-                sp.getBoolean("enabled", false);
-
-        sp.edit()
-                .putBoolean("enabled", !enabled)
-                .apply();
-
-        Toast.makeText(
-                this,
-                !enabled
-                        ? "رمز برنامه فعال شد"
-                        : "رمز برنامه غیرفعال شد",
-                Toast.LENGTH_SHORT
-        ).show();
-    }
-
-    // =========================
-    // پایان قسمت ۵
-    // =========================
-        // =========================
-    // پایان قسمت ۵
-    // =========================
-    // =========================
-    // PART 6
-    // توابع کمکی رابط کاربری
-    // =========================
-
-    private void page(String title) {
-        isHome = false;
-
-        root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(LIGHT);
-
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(true);
-
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(
-                dp(14),
-                dp(14),
-                dp(14),
-                dp(30)
-        );
-
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(
-                dp(10),
-                dp(10),
-                dp(10),
-                dp(10)
-        );
-        header.setBackground(roundedBg(DARK_GREEN, DARK_GREEN, 1, 16));
-
-        TextView titleText = text(
-                header,
-                title,
-                20,
-                GOLD,
-                Gravity.CENTER
-        );
-
-        titleText.setTypeface(Typeface.DEFAULT_BOLD);
-
-        header.addView(
-                titleText,
-                new LinearLayout.LayoutParams(
-                        0,
-                        dp(55),
-                        1
-                )
-        );
-
-        content.addView(header);
-
-        scroll.addView(content);
-
-        root.addView(
-                scroll,
-                new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                )
-        );
-
-        setContentView(root);
-
-        // محتوای صفحه از این قسمت به بعد به root اضافه می‌شود.
-    }
-
-    private TextView text(
-            String value,
-            float size,
-            int color,
-            int gravity
-    ) {
-        TextView tv = new TextView(this);
-        tv.setText(value);
-        tv.setTextSize(size);
-        tv.setTextColor(color);
-        tv.setGravity(gravity);
-        tv.setPadding(
-                dp(6),
-                dp(6),
-                dp(6),
-                dp(6)
-        );
-        return tv;
-    }
-
-    private TextView text(
-            ViewGroup parent,
-            String value,
-            float size,
-            int color,
-            int gravity
-    ) {
-        TextView tv = new TextView(this);
-
-        tv.setText(value);
-        tv.setTextSize(size);
-        tv.setTextColor(color);
-        tv.setGravity(gravity);
-        tv.setPadding(
-                dp(6),
-                dp(6),
-                dp(6),
-                dp(6)
-        );
-
-        parent.addView(
-                tv,
-                new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-        );
-
-        return tv;
-    }
-
-    private EditText input(
-            String hint,
-            String value
-    ) {
-        EditText edit = new EditText(this);
-
-        edit.setHint(hint);
-        edit.setText(value);
-        edit.setTextSize(15);
-        edit.setTextColor(DARK_GREEN);
-        edit.setHintTextColor(GRAY);
-        edit.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        edit.setPadding(
-                dp(12),
-                dp(8),
-                dp(12),
-                dp(8)
-        );
-
-        edit.setBackground(
-                roundedBg(WHITE, GOLD, 1, 12)
-        );
-
-        LinearLayout.LayoutParams lp =
-                new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        dp(52)
-                );
-
-        lp.setMargins(
-                0,
-                dp(6),
-                0,
-                dp(6)
-        );
-
-        edit.setLayoutParams(lp);
-
-        return edit;
-    }
-
-    private Button addButton(
-            ViewGroup parent,
-            String title,
-            View.OnClickListener listener
-    ) {
-        Button button = new Button(this);
-
-        button.setText(title);
-        button.setTextSize(14);
-        button.setTextColor(DARK_GREEN);
-        button.setGravity(Gravity.CENTER);
-        button.setAllCaps(false);
-        button.setTypeface(Typeface.DEFAULT_BOLD);
-        button.setPadding(
-                dp(8),
-                dp(4),
-                dp(8),
-                dp(4)
-        );
-
-        button.setBackground(
-                roundedBg(WHITE, GOLD, 2, 14)
-        );
-
-        button.setOnClickListener(listener);
-
-        LinearLayout.LayoutParams lp =
-                new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        dp(54)
-                );
-
-        lp.setMargins(
-                0,
-                dp(5),
-                0,
-                dp(5)
-        );
-
-        parent.addView(button, lp);
-
-        return button;
-    }
-
-    private LinearLayout rounded(
-            int fillColor,
-            int strokeColor,
-            int strokeWidth,
-            int radius
-    ) {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setBackground(roundedBg(
-                fillColor,
-                strokeColor,
-                strokeWidth,
-                radius
-        ));
-        return layout;
-    }
-
-    private GradientDrawable roundedBg(
-            int fillColor,
-            int strokeColor,
-            int strokeWidth,
-            int radius
-    ) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setColor(fillColor);
-        drawable.setCornerRadius(dp(radius));
-
-        if (strokeWidth > 0) {
-            drawable.setStroke(
-                    dp(strokeWidth),
-                    strokeColor
-            );
-        }
-
-        return drawable;
-    }
-
-    private void space(
-            ViewGroup parent,
-            int height
-    ) {
-        Space s = new Space(this);
-
-        parent.addView(
-                s,
-                new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        dp(height)
-                )
-        );
-    }
-
-    private void spaceHorizontal(
-            ViewGroup parent,
-            int width
-    ) {
-        Space s = new Space(this);
-
-        parent.addView(
-                s,
-                new LinearLayout.LayoutParams(
-                        dp(width),
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                )
-        );
-    }
-
-    private void spaceInside(
-            ViewGroup parent,
-            int size
-    ) {
-        parent.setPadding(
-                dp(size),
-                dp(size),
-                dp(size),
-                dp(size)
-        );
-    }
-
-    private ArrayAdapter<String> createSpinnerAdapter(
-            ArrayList<String> values
-    ) {
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(
-                        this,
-                        android.R.layout.simple_spinner_item,
-                        values
-                );
-
-        adapter.setDropDownViewResource(
-                android.R.layout.simple_spinner_dropdown_item
-        );
-
-        return adapter;
-    }
-
-    private int dp(int value) {
-        return (int) (
-                value *
-                        getResources()
-                                .getDisplayMetrics()
-                                .density
-        );
-    }
-
-    private String safe(
-            String value,
-            String fallback
-    ) {
-        if (value == null ||
-                value.trim().isEmpty()) {
-            return fallback;
-        }
-
-        return value;
-    }
-
-    private double parseDouble(String value) {
-        if (value == null) {
-            return 0;
-        }
-
-        try {
-            String clean = value
-                    .replace(",", "")
-                    .replace("٬", "")
-                    .replace(" ", "")
-                    .trim();
-
-            if (clean.isEmpty()) {
-                return 0;
-            }
-
-            return Double.parseDouble(clean);
-
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
-    private String formatNumber(double value) {
-        if (value == Math.rint(value)) {
-            return String.format(
-                    Locale.US,
-                    "%,.0f",
-                    value
-            );
-        }
-
-        return String.format(
-                Locale.US,
-                "%,.2f",
-                value
-        );
-    }
-
-    private String number(double value) {
-        return formatNumber(value);
-    }
-
-    private String money(double value) {
-        return formatNumber(value);
-    }
-
-    private String today() {
-        SimpleDateFormat sdf =
-                new SimpleDateFormat(
-                        "yyyy/MM/dd",
-                        Locale.US
-                );
-
-        return sdf.format(new Date());
-    }
-
-    private String formatDateTime() {
-        SimpleDateFormat sdf =
-                new SimpleDateFormat(
-                        "yyyy/MM/dd HH:mm",
-                        Locale.US
-                );
-
-        return sdf.format(new Date());
-    }
-
-    // =========================
-    // پایان قسمت ۶
-    // =========================
-    // =========================
-    // PART 7
-    // رسانه، فایل‌ها، تاریخ و توابع عمومی
-    // =========================
-
-    private void addContactFooter(ViewGroup parent) {
-        space(parent, 20);
-
-        LinearLayout footer = new LinearLayout(this);
-        footer.setOrientation(LinearLayout.VERTICAL);
-        footer.setGravity(Gravity.CENTER);
-        footer.setPadding(
-                dp(12),
-                dp(12),
-                dp(12),
-                dp(12)
-        );
-
-        footer.setBackground(
-                roundedBg(
-                        DARK_GREEN,
-                        GOLD,
-                        1,
-                        16
-                )
-        );
-
-        TextView brand = text(
-                footer,
-                "ZERIVA",
-                18,
-                GOLD,
-                Gravity.CENTER
-        );
-
-        brand.setTypeface(
-                Typeface.DEFAULT_BOLD
-        );
-
-        text(
-                footer,
-                "Shani Grape • Mariwan • Zarivar",
-                13,
-                LIGHT_GOLD,
-                Gravity.CENTER
-        );
-
-        text(
-                footer,
-                "تماس: " + PHONE,
-                13,
-                WHITE,
-                Gravity.CENTER
-        );
-
-        text(
-                footer,
-                INSTAGRAM,
-                13,
-                LIGHT_GOLD,
-                Gravity.CENTER
-        );
-
-        parent.addView(footer);
-    }
-
-    private void openMedia(Uri uri) {
-        if (uri == null) {
-            Toast.makeText(
-                    this,
-                    "فایلی انتخاب نشده است",
-                    Toast.LENGTH_SHORT
-            ).show();
-            return;
-        }
-
-        try {
-            Intent intent =
-                    new Intent(
-                            Intent.ACTION_VIEW,
-                            uri
-                    );
-
-            intent.addFlags(
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-            );
-
-            startActivity(intent);
-
-        } catch (Exception e) {
-            Toast.makeText(
-                    this,
-                    "امکان باز کردن فایل وجود ندارد",
-                    Toast.LENGTH_SHORT
-            ).show();
-        }
-    }
-
-    private String persistUri(Uri uri) {
-        if (uri == null) {
-            return "";
-        }
-
-        try {
-            getContentResolver()
-                    .takePersistableUriPermission(
-                            uri,
-                            Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    );
-        } catch (Exception ignored) {
-        }
+                }
 
         return uri.toString();
     }
@@ -5574,10 +5779,6 @@ public class MainActivity extends Activity {
     }
 
     // =========================
-    // پایان قسمت ۷
-    // =========================
-    // =========================
-    // PART 8
     // پایگاه داده SQLite
     // =========================
 
@@ -5676,20 +5877,15 @@ public class MainActivity extends Activity {
             d.execSQL(
                     "CREATE TABLE IF NOT EXISTS deposit_settings (" +
                             "id INTEGER PRIMARY KEY," +
-                            "type TEXT DEFAULT 'percent'," +
+                            "type TEXT," +
                             "value REAL DEFAULT 0" +
                             ")"
             );
 
-            d.execSQL(
-                    "INSERT OR IGNORE INTO deposit_settings " +
-                            "(id,type,value) " +
-                            "VALUES (1,'percent',0)"
-            );
-
             // -------------------------
             // استوری
-                    // -------------------------
+            // -------------------------
+
             d.execSQL(
                     "CREATE TABLE IF NOT EXISTS stories (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -5705,6 +5901,7 @@ public class MainActivity extends Activity {
             // -------------------------
             // گالری
             // -------------------------
+
             d.execSQL(
                     "CREATE TABLE IF NOT EXISTS gallery (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -5718,6 +5915,7 @@ public class MainActivity extends Activity {
             // -------------------------
             // رضایت مشتری
             // -------------------------
+
             d.execSQL(
                     "CREATE TABLE IF NOT EXISTS satisfaction (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -5734,6 +5932,7 @@ public class MainActivity extends Activity {
             // -------------------------
             // قیمت روز
             // -------------------------
+
             d.execSQL(
                     "CREATE TABLE IF NOT EXISTS daily_price (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -5746,6 +5945,7 @@ public class MainActivity extends Activity {
             // -------------------------
             // معاملات
             // -------------------------
+
             d.execSQL(
                     "CREATE TABLE IF NOT EXISTS transactions (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -5761,373 +5961,8 @@ public class MainActivity extends Activity {
             );
 
             // -------------------------
-            // تنظیم شماره مشتری
+            // تنظیمات عمومی
             // -------------------------
-            d.execSQL(
-                    "CREATE TABLE IF NOT EXISTS settings (" +
-                            "key_name TEXT PRIMARY KEY," +
-                            "value TEXT" +
-                            ")"
-            );
-        }
-
-        @Override
-        public void onUpgrade(
-                SQLiteDatabase d,
-                int oldVersion,
-                int newVersion
-        ) {
-
-            // نسخه‌های قبلی ممکن است بعضی جدول‌ها
-            // یا ستون‌های جدید را نداشته باشند.
-
-            ensureColumn(
-                    d,
-                    "customers",
-                    "province",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "customers",
-                    "city",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "customers",
-                    "address",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "customers",
-                    "description",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "customers",
-                    "created_at",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "purchases",
-                    "box_count",
-                    "INTEGER DEFAULT 0"
-            );
-
-            ensureColumn(
-                    d,
-                    "purchases",
-                    "purchase_date",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "purchases",
-                    "description",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "purchases",
-                    "settled",
-                    "INTEGER DEFAULT 0"
-            );
-
-            ensureColumn(
-                    d,
-                    "purchases",
-                    "settled_date",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "purchases",
-                    "created_at",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "orders",
-                    "order_no",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "orders",
-                    "deposit_required",
-                    "REAL DEFAULT 0"
-            );
-
-            ensureColumn(
-                    d,
-                    "orders",
-                    "deposit_paid",
-                    "REAL DEFAULT 0"
-            );
-
-            ensureColumn(
-                    d,
-                    "orders",
-                    "deposit_status",
-                    "TEXT DEFAULT 'not_required'"
-            );
-
-            ensureColumn(
-                    d,
-                    "orders",
-                    "transaction_id",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "orders",
-                    "payment_date",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "orders",
-                    "payment_status",
-                    "TEXT DEFAULT 'unpaid'"
-            );
-
-            ensureColumn(
-                    d,
-                    "orders",
-                    "confirmed",
-                    "INTEGER DEFAULT 1"
-            );
-
-            ensureColumn(
-                    d,
-                    "orders",
-                    "status",
-                    "TEXT DEFAULT 'pending'"
-            );
-
-            ensureColumn(
-                    d,
-                    "orders",
-                    "order_date",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "orders",
-                    "created_at",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "stories",
-                    "caption",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "stories",
-                    "archived",
-                    "INTEGER DEFAULT 0"
-            );
-
-            ensureColumn(
-                    d,
-                    "stories",
-                    "created_at",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "gallery",
-                    "caption",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "gallery",
-                    "created_at",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "satisfaction",
-                    "message",
-                    "TEXT"
-            );
-
-            ensureColumn(
-                    d,
-                    "satisfaction",
-                    "created_at",
-                    "TEXT"
-            );
-
-            // اگر جدول‌های جدید در نسخه قبلی وجود نداشته باشند،
-            // ایجاد می‌شوند.
-            createMissingTables(d);
-
-            // سفارش‌های قدیمی برنامه را قطعی در نظر می‌گیریم
-            // تا اطلاعات قبلی کاربر از بین نرود.
-            try {
-                d.execSQL(
-                        "UPDATE orders " +
-                                "SET confirmed=1 " +
-                                "WHERE confirmed IS NULL"
-                );
-            } catch (Exception ignored) {
-            }
-
-            try {
-                d.execSQL(
-                        "UPDATE orders " +
-                                "SET status='pending' " +
-                                "WHERE status IS NULL OR status=''"
-                );
-            } catch (Exception ignored) {
-            }
-        }
-
-        private void ensureColumn(
-                SQLiteDatabase d,
-                String table,
-                String column,
-                String definition
-        ) {
-            try {
-                Cursor c = d.rawQuery(
-                        "PRAGMA table_info(" + table + ")",
-                        null
-                );
-
-                boolean exists = false;
-
-                int nameIndex =
-                        c.getColumnIndex("name");
-
-                while (c.moveToNext()) {
-                    if (nameIndex >= 0 &&
-                            column.equals(
-                                    c.getString(nameIndex)
-                            )) {
-                        exists = true;
-                        break;
-                    }
-                }
-
-                c.close();
-
-                if (!exists) {
-                    d.execSQL(
-                            "ALTER TABLE " +
-                                    table +
-                                    " ADD COLUMN " +
-                                    column +
-                                    " " +
-                                    definition
-                    );
-                }
-
-            } catch (Exception ignored) {
-            }
-        }
-
-        private void createMissingTables(
-                SQLiteDatabase d
-        ) {
-
-            d.execSQL(
-                    "CREATE TABLE IF NOT EXISTS deposit_settings (" +
-                            "id INTEGER PRIMARY KEY," +
-                            "type TEXT DEFAULT 'percent'," +
-                            "value REAL DEFAULT 0" +
-                            ")"
-            );
-
-            d.execSQL(
-                    "INSERT OR IGNORE INTO deposit_settings " +
-                            "(id,type,value) " +
-                            "VALUES (1,'percent',0)"
-            );
-
-            d.execSQL(
-                    "CREATE TABLE IF NOT EXISTS stories (" +
-                            "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                            "uri TEXT," +
-                            "type TEXT," +
-                            "caption TEXT," +
-                            "date_text TEXT," +
-                            "archived INTEGER DEFAULT 0," +
-                            "created_at TEXT" +
-                            ")"
-            );
-
-            d.execSQL(
-                    "CREATE TABLE IF NOT EXISTS gallery (" +
-                            "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                            "uri TEXT," +
-                            "type TEXT," +
-                            "caption TEXT," +
-                            "created_at TEXT" +
-                            ")"
-            );
-
-            d.execSQL(
-                    "CREATE TABLE IF NOT EXISTS satisfaction (" +
-                            "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                            "uri TEXT," +
-                            "type TEXT," +
-                            "customer_name TEXT," +
-                            "city TEXT," +
-                            "message TEXT," +
-                            "date_text TEXT," +
-                            "created_at TEXT" +
-                            ")"
-            );
-
-            d.execSQL(
-                    "CREATE TABLE IF NOT EXISTS daily_price (" +
-                            "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                            "price REAL DEFAULT 0," +
-                            "date_text TEXT," +
-                            "created_at TEXT" +
-                            ")"
-            );
-
-            d.execSQL(
-                    "CREATE TABLE IF NOT EXISTS transactions (" +
-                            "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                            "customer TEXT," +
-                            "type TEXT," +
-                            "description TEXT," +
-                            "debit REAL DEFAULT 0," +
-                            "payment REAL DEFAULT 0," +
-                            "total REAL DEFAULT 0," +
-                            "date_text TEXT," +
-                            "created_at TEXT" +
-                            ")"
-            );
 
             d.execSQL(
                     "CREATE TABLE IF NOT EXISTS settings (" +
@@ -6139,11 +5974,7 @@ public class MainActivity extends Activity {
     }
 
     // =========================
-    // پایان قسمت ۸
-    // =========================
-    // =========================
-    // PART 9
-    // امنیت نهایی و پایان MainActivity
+    // امنیت نهایی
     // =========================
 
     private boolean isPasswordEnabled() {
@@ -6164,14 +5995,20 @@ public class MainActivity extends Activity {
                 );
 
         boolean enabled =
-                sp.getBoolean("enabled", false);
+                sp.getBoolean(
+                        "enabled",
+                        false
+                );
 
         if (!enabled) {
             return true;
         }
 
         String savedPassword =
-                sp.getString("password", "");
+                sp.getString(
+                        "password",
+                        ""
+                );
 
         if (savedPassword == null ||
                 savedPassword.isEmpty()) {
